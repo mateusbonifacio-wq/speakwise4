@@ -30,6 +30,7 @@ export default async function StockPage() {
     const batches = await db.productBatch.findMany({
       where: {
         restaurantId: restaurant.id,
+        // Fetch all batches; client component will filter by quantity
       },
       include: {
         category: true,
@@ -48,26 +49,12 @@ export default async function StockPage() {
           description="Lista de produtos em stock organizados por categoria ou por produto."
         />
 
-        {batches.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">
-                Ainda não existem produtos em stock
-              </p>
-              <p className="text-sm">
-                Adicione uma entrada em &quot;Nova Entrada&quot;.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <StockViewWrapper
-            batches={JSON.parse(JSON.stringify(batches))}
-            restaurant={JSON.parse(JSON.stringify(restaurant))}
-            categories={JSON.parse(JSON.stringify(restaurant.categories))}
-            locations={JSON.parse(JSON.stringify(restaurant.locations))}
-          />
-        )}
+        <StockViewWrapper
+          batches={JSON.parse(JSON.stringify(batches))}
+          restaurant={JSON.parse(JSON.stringify(restaurant))}
+          categories={JSON.parse(JSON.stringify(restaurant.categories))}
+          locations={JSON.parse(JSON.stringify(restaurant.locations))}
+        />
       </div>
     </AuthGuard>
   );

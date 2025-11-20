@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getRestaurantByTenantId, getUser } from "@/lib/data-access";
-import type { RestaurantId } from "@/lib/auth";
+import { RESTAURANT_NAMES, type RestaurantId } from "@/lib/auth";
 
 /**
  * Helper to get restaurantId from cookies in server actions
@@ -333,6 +333,67 @@ export async function deleteProductBatch(batchId: string) {
   });
 
   revalidatePath("/stock");
+}
+
+/**
+ * Server action para ajustar quantidade de um batch
+ * Pode aumentar ou diminuir quantidade
+ * Se quantity <= 0, marca como USED e define quantity = 0
+ */
+export async function adjustBatchQuantity(batchId: string, adjustment: number) {
+  try {
+    const tenantId = await getRestaurantIdFromCookie();
+    if (!tenantId) {
+      return {
+        success: false,
+        error: "Não autenticado. Por favor, faça login novamente.",
+      };
+    }
+
+    // Get current batch
+    const batch = await db.productBatch.findFirst({
+      where: {
+        id: batchId,
+        restaurant: { name: RESTAURANT_NAMES[tenantId] },
+      },
+    });
+
+    if (!batch) {
+      return {
+        success: false,
+        error: "Entrada não encontrada.",
+      };
+    }
+
+    // Calculate new quantity
+    const newQuantity = Math.max(0, batch.quantity + adjustment);
+
+    // Update batch
+    await db.productBatch.update({
+      where: { id: batchId },
+      data: {
+        quantity: newQuantity,
+        // Mark as USED if quantity reaches 0
+        status: newQuantity <= 0 ? "USED" : batch.status === "USED" ? "ACTIVE" : batch.status,
+      },
+    });
+
+    revalidatePath("/stock");
+    revalidatePath("/hoje");
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      message: `Quantidade ajustada para ${newQuantity} ${batch.unit}`,
+    };
+  } catch (error) {
+    console.error("Error adjusting batch quantity:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao ajustar quantidade.";
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
 }
 
 

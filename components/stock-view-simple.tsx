@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { deleteProductBatch } from "@/app/actions";
+import { deleteProductBatch, adjustBatchQuantity } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,10 +15,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { MapPin, Package, Search, Edit, Trash2 } from "lucide-react";
+import { MapPin, Package, Search, Edit, Trash2, Plus, Minus } from "lucide-react";
 import { EditBatchDialog } from "./edit-batch-dialog";
 import { StatusBadge } from "./status-badge";
+import { Badge } from "@/components/ui/badge";
 import { getBatchStatus, groupBatchesByCategory } from "@/lib/stock-utils";
+import { toast } from "sonner";
 import type { Category, Location, Restaurant } from "@prisma/client";
 import type { BatchWithRelations } from "@/lib/stock-utils";
 
@@ -43,6 +45,7 @@ export function StockViewSimple({
   initialStatusFilter,
 }: StockViewSimpleProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   
   // Initialize status filter from prop (passed from wrapper that reads URL)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(
@@ -50,6 +53,7 @@ export function StockViewSimple({
       ? initialStatusFilter
       : "all") as StatusFilter
   );
+  const [showFinished, setShowFinished] = useState(false); // Toggle to show finished items
   const [searchQuery, setSearchQuery] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<BatchWithRelations | null>(
@@ -60,6 +64,7 @@ export function StockViewSimple({
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const [adjustingBatchId, setAdjustingBatchId] = useState<string | null>(null);
 
   // Update status filter when prop changes (e.g., from navigation)
   useEffect(() => {
@@ -115,9 +120,39 @@ export function StockViewSimple({
     }
   };
 
-  // Filtrar batches baseado na pesquisa e no filtro de status
+  // Handle quantity adjustment
+  const handleAdjustQuantity = async (batchId: string, adjustment: number) => {
+    setAdjustingBatchId(batchId);
+    startTransition(async () => {
+      try {
+        const result = await adjustBatchQuantity(batchId, adjustment);
+        if (result.success) {
+          toast.success(result.message || "Quantidade ajustada com sucesso!");
+          router.refresh();
+        } else {
+          toast.error("Erro ao ajustar quantidade", {
+            description: result.error || "Ocorreu um erro ao ajustar a quantidade.",
+          });
+        }
+      } catch (error) {
+        console.error("Error adjusting quantity:", error);
+        toast.error("Erro inesperado", {
+          description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
+        });
+      } finally {
+        setAdjustingBatchId(null);
+      }
+    });
+  };
+
+  // Filtrar batches baseado na pesquisa, filtro de status e finished items
   const filteredBatches = useMemo(() => {
     let filtered = batches;
+
+    // Filter by finished status (by default, hide finished items)
+    if (!showFinished) {
+      filtered = filtered.filter((batch) => (batch.quantity ?? 0) > 0);
+    }
 
     // Apply status filter
     if (statusFilter !== "all") {
@@ -136,7 +171,7 @@ export function StockViewSimple({
     }
 
     return filtered;
-  }, [batches, searchQuery, statusFilter, restaurant]);
+  }, [batches, searchQuery, statusFilter, showFinished, restaurant]);
 
   // Agrupar por categoria
   const batchesByCategory = useMemo(
@@ -159,8 +194,24 @@ export function StockViewSimple({
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Status filters - Mobile-first pill buttons */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      {/* Show finished toggle and status filters */}
+      <div className="flex flex-col gap-3 mb-4">
+        {/* Toggle to show finished items */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="showFinished"
+            checked={showFinished}
+            onChange={(e) => setShowFinished(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <label htmlFor="showFinished" className="text-sm font-medium text-gray-700 cursor-pointer">
+            Mostrar também esgotados
+          </label>
+        </div>
+
+        {/* Status filters - Mobile-first pill buttons */}
+        <div className="flex flex-wrap gap-2">
         <Button
           variant={statusFilter === "all" ? "default" : "outline"}
           size="sm"
@@ -221,6 +272,7 @@ export function StockViewSimple({
         >
           OK
         </Button>
+        </div>
       </div>
 
       {/* Mobile-first search bar - Full width with border-gray-300 styling */}
@@ -239,13 +291,15 @@ export function StockViewSimple({
           <CardContent className="py-12 text-center text-muted-foreground">
             <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
             <p className="text-lg font-medium mb-2">
-              {searchQuery || statusFilter !== "all"
+              {searchQuery || statusFilter !== "all" || showFinished
                 ? "Nenhum produto encontrado"
                 : "Ainda não existem produtos em stock"}
             </p>
             <p className="text-sm">
               {searchQuery || statusFilter !== "all"
                 ? "Tente pesquisar por outro termo ou altere o filtro."
+                : showFinished
+                ? "Não existem produtos esgotados."
                 : 'Adicione uma entrada em "Nova Entrada".'}
             </p>
           </CardContent>
@@ -265,17 +319,30 @@ export function StockViewSimple({
                 {categoryBatches.map((batch) => {
                   const status = getBatchStatus(batch, restaurant);
 
+                  const isFinished = (batch.quantity ?? 0) <= 0;
+                  const isAdjusting = adjustingBatchId === batch.id;
+
                   return (
                     <div
                       key={batch.id}
-                      className="bg-white rounded-xl shadow-sm p-4 mb-3 border border-gray-100 hover:shadow-md transition-shadow"
+                      className={`bg-white rounded-xl shadow-sm p-4 mb-3 border border-gray-100 hover:shadow-md transition-shadow ${
+                        isFinished ? "opacity-60" : ""
+                      }`}
                     >
                       {/* Top row: Product name bold, status badge aligned right */}
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                         <div className="flex-1">
-                          <h3 className="text-base md:text-lg font-semibold text-foreground">
-                            {batch.name}
-                          </h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-base md:text-lg font-semibold text-foreground">
+                              {batch.name}
+                            </h3>
+                            {/* Finished badge */}
+                            {isFinished && (
+                              <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600">
+                                Esgotado
+                              </Badge>
+                            )}
+                          </div>
                           {/* Display packaging and size info if available */}
                           {(batch.packagingType || (batch.size && batch.sizeUnit)) && (
                             <p className="text-sm text-muted-foreground mt-1">
@@ -295,6 +362,7 @@ export function StockViewSimple({
                             className="h-9 w-9 text-muted-foreground hover:text-foreground"
                             onClick={() => handleEdit(batch)}
                             aria-label="Editar entrada"
+                            disabled={isAdjusting || isPending}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -304,19 +372,45 @@ export function StockViewSimple({
                             className="h-9 w-9 text-destructive hover:text-destructive"
                             onClick={() => handleDelete(batch)}
                             aria-label="Eliminar entrada"
+                            disabled={isAdjusting || isPending}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
 
-                      {/* Second row: Quantity + Location */}
+                      {/* Second row: Quantity with +/- buttons + Location */}
                       <div className="flex flex-col sm:flex-row gap-2 text-sm text-muted-foreground mb-2">
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 flex-shrink-0" />
                           <span className="font-medium text-foreground">
                             {batch.quantity} {batch.unit}
                           </span>
+                          {/* Quantity adjustment buttons */}
+                          {!isFinished && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7 text-sm border-gray-300 hover:bg-gray-50"
+                                onClick={() => handleAdjustQuantity(batch.id, -1)}
+                                disabled={isAdjusting || isPending}
+                                aria-label="Diminuir quantidade"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7 text-sm border-gray-300 hover:bg-gray-50"
+                                onClick={() => handleAdjustQuantity(batch.id, 1)}
+                                disabled={isAdjusting || isPending}
+                                aria-label="Aumentar quantidade"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                         {batch.location && (
                           <div className="flex items-center gap-2">

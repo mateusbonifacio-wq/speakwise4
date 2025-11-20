@@ -22,6 +22,10 @@ export default async function DashboardContent({
       where: {
         restaurantId: restaurant.id,
         status: "ACTIVE",
+        // Only count active stock (quantity > 0) in dashboard
+        quantity: {
+          gt: 0,
+        },
       },
       include: {
         category: true,
