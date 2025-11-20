@@ -58,7 +58,7 @@ export default function AccessPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
       {/* Mobile-first card: full width on mobile, max-w-sm on desktop with better spacing */}
-      <Card className="w-full max-w-sm shadow-lg">
+      <Card className="w-full max-w-sm bg-white rounded-xl shadow-md mt-8">
         <CardHeader className="space-y-2 text-center pb-4">
           <div className="mx-auto mb-3 rounded-full bg-primary/10 p-3 md:p-4">
             <Lock className="h-6 w-6 md:h-7 md:w-7 text-primary" />
@@ -95,11 +95,10 @@ export default function AccessPage() {
               </div>
             )}
 
-            {/* Full-width button with good tap target */}
+            {/* Full-width button with indigo styling */}
             <Button
               type="submit"
-              className="w-full h-11 md:h-12 text-base md:text-lg font-semibold"
-              size="lg"
+              className="w-full bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700 h-11 md:h-12 text-base md:text-lg font-semibold"
               disabled={isSubmitting || pin.length !== 4}
             >
               {isSubmitting ? "A verificar..." : "Entrar"}

@@ -44,7 +44,7 @@ export function MainNav() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/95">
       {/* Mobile-first: h-12 on mobile for compact, h-14 on desktop */}
       <div className="container flex h-12 md:h-14 items-center px-4 md:px-6">
         {/* Desktop navigation - hidden on mobile */}
@@ -60,8 +60,8 @@ export function MainNav() {
                 key={route.href}
                 href={route.href}
                 className={cn(
-                  "transition-colors hover:text-foreground/80 px-2 py-1 rounded-md",
-                  route.active ? "text-foreground bg-accent" : "text-foreground/60"
+                  "transition-colors hover:text-foreground/80 px-3 py-2 rounded-md text-sm font-medium",
+                  route.active ? "text-foreground bg-indigo-50 text-indigo-600" : "text-foreground/60"
                 )}
               >
                 {route.label}
@@ -99,8 +99,8 @@ export function MainNav() {
                   className={cn(
                     "flex items-center gap-3 px-3 py-3 text-base font-medium rounded-lg transition-colors",
                     route.active 
-                      ? "text-foreground bg-accent" 
-                      : "text-foreground/70 hover:text-foreground hover:bg-accent/50"
+                      ? "text-foreground bg-indigo-50 text-indigo-600" 
+                      : "text-foreground/70 hover:text-foreground hover:bg-gray-50"
                   )}
                 >
                   <route.icon className="h-5 w-5" />

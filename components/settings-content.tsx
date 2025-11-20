@@ -73,7 +73,7 @@ export default function SettingsContent({ restaurant }: SettingsContentProps) {
                     className="w-full md:max-w-xs h-11 md:h-10 text-base"
                   />
                 </div>
-                <Button type="submit" className="w-full md:w-auto" size="lg">
+                <Button type="submit" className="w-full md:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700" size="lg">
                   Guardar
                 </Button>
               </form>
@@ -99,7 +99,7 @@ export default function SettingsContent({ restaurant }: SettingsContentProps) {
                   className="flex-1 h-11 md:h-10 text-base"
                   required
                 />
-                <Button type="submit" className="w-full sm:w-auto" size="lg">
+                <Button type="submit" className="w-full sm:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700" size="lg">
                   Adicionar
                 </Button>
               </form>
@@ -127,7 +127,7 @@ export default function SettingsContent({ restaurant }: SettingsContentProps) {
                                 defaultValue={category.alertDaysBeforeExpiry ?? restaurant.alertDaysBeforeExpiry}
                                 className="w-full sm:w-24 h-10 md:h-9 text-base"
                               />
-                              <Button type="submit" size="sm" variant="outline" className="flex-shrink-0">
+                              <Button type="submit" size="sm" variant="outline" className="flex-shrink-0 border border-gray-300 text-gray-700 rounded-lg py-2 px-4">
                                 Guardar
                               </Button>
                             </form>
@@ -143,7 +143,7 @@ export default function SettingsContent({ restaurant }: SettingsContentProps) {
                                 defaultValue={category.warningDaysBeforeExpiry ?? restaurant.alertDaysBeforeExpiry}
                                 className="w-full sm:w-24 h-10 md:h-9 text-base"
                               />
-                              <Button type="submit" size="sm" variant="outline" className="flex-shrink-0">
+                              <Button type="submit" size="sm" variant="outline" className="flex-shrink-0 border border-gray-300 text-gray-700 rounded-lg py-2 px-4">
                                 Guardar
                               </Button>
                             </form>
@@ -189,7 +189,7 @@ export default function SettingsContent({ restaurant }: SettingsContentProps) {
                   className="flex-1 h-11 md:h-10 text-base"
                   required
                 />
-                <Button type="submit" className="w-full sm:w-auto" size="lg">
+                <Button type="submit" className="w-full sm:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700" size="lg">
                   Adicionar
                 </Button>
               </form>

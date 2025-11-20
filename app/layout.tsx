@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ConditionalNav } from "@/components/conditional-nav";
 import { SyncAuthCookie } from "@/components/sync-auth-cookie";
+import { FloatingActionButton } from "@/components/floating-action-button";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -23,10 +24,12 @@ export default function RootLayout({
         <SyncAuthCookie />
         <div className="relative flex min-h-screen flex-col">
           <ConditionalNav />
-          {/* Mobile-first padding: py-4 px-4 on mobile, py-6 on desktop */}
-          <main className="flex-1 container py-4 px-4 md:py-6 md:px-6 max-w-4xl mx-auto">
+          {/* Mobile-first container: max-w-3xl on desktop, full width on mobile */}
+          <main className="flex-1 w-full py-4 px-4 md:py-6 md:px-6 max-w-3xl mx-auto">
             {children}
           </main>
+          {/* Floating Action Button - Mobile only */}
+          <FloatingActionButton />
         </div>
       </body>
     </html>

@@ -132,10 +132,10 @@ export default function NewEntryForm({
             </div>
 
             {/* Submit button - Full width on mobile, auto on desktop */}
-            <div className="pt-2 md:pt-4">
+            <div className="pt-4 md:pt-6">
               <Button 
                 type="submit" 
-                className="w-full md:w-auto md:min-w-[200px]" 
+                className="w-full md:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700 md:min-w-[200px]" 
                 size="lg"
               >
                 Guardar entrada

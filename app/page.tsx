@@ -23,9 +23,9 @@ export default function Home() {
       </div>
 
       {/* CTA Button - Full width on mobile, auto width on desktop */}
-      <div className="w-full max-w-sm px-4">
+      <div className="w-full max-w-sm">
         <Link href="/acesso" className="block w-full">
-          <Button size="lg" className="w-full font-semibold text-base md:text-lg py-6 md:py-7">
+          <Button size="lg" className="w-full bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700 font-semibold text-base md:text-lg">
             Entrar na aplicação
           </Button>
         </Link>

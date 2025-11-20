@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { deleteProductBatch } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "./status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -111,10 +112,10 @@ export function StockView({
   const sortedCategoryNames = useMemo(() => {
     return Object.keys(batchesByCategory).sort((a, b) => {
       const aHasUrgent = batchesByCategory[a].some(
-        (b) => getBatchStatus(b, restaurant).variant === "destructive"
+        (b) => getBatchStatus(b, restaurant).status === "expired" || getBatchStatus(b, restaurant).status === "urgent"
       );
       const bHasUrgent = batchesByCategory[b].some(
-        (b) => getBatchStatus(b, restaurant).variant === "destructive"
+        (b) => getBatchStatus(b, restaurant).status === "expired" || getBatchStatus(b, restaurant).status === "urgent"
       );
       if (aHasUrgent && !bHasUrgent) return -1;
       if (!aHasUrgent && bHasUrgent) return 1;
@@ -127,10 +128,10 @@ export function StockView({
     return Object.keys(aggregatedByProduct).sort((a, b) => {
       // Produtos com batches urgentes primeiro
       const aHasUrgent = aggregatedByProduct[a].batches.some(
-        (b) => getBatchStatus(b, restaurant).variant === "destructive"
+        (b) => getBatchStatus(b, restaurant).status === "expired" || getBatchStatus(b, restaurant).status === "urgent"
       );
       const bHasUrgent = aggregatedByProduct[b].batches.some(
-        (b) => getBatchStatus(b, restaurant).variant === "destructive"
+        (b) => getBatchStatus(b, restaurant).status === "expired" || getBatchStatus(b, restaurant).status === "urgent"
       );
       if (aHasUrgent && !bHasUrgent) return -1;
       if (!aHasUrgent && bHasUrgent) return 1;
@@ -169,17 +170,9 @@ export function StockView({
     setExpandedProducts(newExpanded);
   };
 
-  const getBadgeClassName = (status: ReturnType<typeof getBatchStatus>) => {
-    if (status.variant === "destructive") {
-      return "bg-red-500 hover:bg-red-600 text-white border-red-600";
-    }
-    if (status.label.includes("A expirar")) {
-      return "bg-orange-500 hover:bg-orange-600 text-white border-orange-600";
-    }
-    if (status.variant === "secondary") {
-      return "bg-green-500/10 hover:bg-green-500/20 text-green-700 border-green-500/30 dark:text-green-400 dark:border-green-500/50";
-    }
-    return "bg-secondary text-secondary-foreground";
+  // Map status to badge type
+  const getBadgeStatus = (status: ReturnType<typeof getBatchStatus>): "expired" | "urgent" | "attention" | "ok" => {
+    return status.status;
   };
 
   return (
@@ -227,7 +220,7 @@ export function StockView({
             {sortedCategoryNames.map((categoryName) => {
               const categoryBatches = batchesByCategory[categoryName];
               const urgentCount = categoryBatches.filter(
-                (b) => getBatchStatus(b, restaurant).variant === "destructive"
+                (b) => getBatchStatus(b, restaurant).status === "expired" || getBatchStatus(b, restaurant).status === "urgent"
               ).length;
 
               return (
@@ -266,9 +259,7 @@ export function StockView({
                                 </h3>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Badge className={getBadgeClassName(status)}>
-                                  {status.label}
-                                </Badge>
+                                <StatusBadge status={getBadgeStatus(status)} label={status.label} />
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -352,7 +343,7 @@ export function StockView({
               );
               const isExpanded = expandedProducts.has(productName);
               const hasUrgent = aggregated.batches.some(
-                (b) => getBatchStatus(b, restaurant).variant === "destructive"
+                (b) => getBatchStatus(b, restaurant).status === "expired" || getBatchStatus(b, restaurant).status === "urgent"
               );
 
               return (
@@ -376,11 +367,7 @@ export function StockView({
                           {productName}
                         </CardTitle>
                       </div>
-                      <Badge
-                        className={getBadgeClassName(nearestStatus)}
-                      >
-                        {nearestStatus.label}
-                      </Badge>
+                      <StatusBadge status={getBadgeStatus(nearestStatus)} label={nearestStatus.label} />
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -462,11 +449,7 @@ export function StockView({
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <Badge
-                                      className={getBadgeClassName(status)}
-                                    >
-                                      {status.label}
-                                    </Badge>
+                                    <StatusBadge status={getBadgeStatus(status)} label={status.label} />
                                     <Button
                                       variant="ghost"
                                       size="icon"

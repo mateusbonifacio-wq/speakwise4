@@ -41,7 +41,7 @@ export function getBatchStatus(
         : batch.expiryDate;
 
     if (isNaN(expiryDate.getTime())) {
-      return { label: "Data inválida", variant: "secondary" as const };
+      return { label: "Data inválida", status: "ok" as const, daysToExpiry: 999 };
     }
 
     const daysToExpiry = differenceInCalendarDays(expiryDate, today);
@@ -54,27 +54,29 @@ export function getBatchStatus(
       batch.category?.warningDaysBeforeExpiry ?? urgentDays;
 
     if (daysToExpiry < 0) {
-      return { label: "Expirado", variant: "destructive" as const };
+      return { label: "Expirado", status: "expired" as const, daysToExpiry };
     }
 
     if (daysToExpiry <= urgentDays) {
       return {
-        label: `Urgente usar (${daysToExpiry} dias)`,
-        variant: "destructive" as const,
+        label: `Urgente (${daysToExpiry} dias)`,
+        status: "urgent" as const,
+        daysToExpiry,
       };
     }
 
     if (daysToExpiry <= warningDays) {
       return {
-        label: `A expirar em breve (${daysToExpiry} dias)`,
-        variant: "default" as const,
+        label: `Atenção (${daysToExpiry} dias)`,
+        status: "attention" as const,
+        daysToExpiry,
       };
     }
 
-    return { label: "OK", variant: "secondary" as const };
+    return { label: "OK", status: "ok" as const, daysToExpiry };
   } catch (error) {
     console.error("Error calculating batch status:", error);
-    return { label: "Erro", variant: "secondary" as const };
+    return { label: "Erro", status: "ok" as const, daysToExpiry: 999 };
   }
 }
 
