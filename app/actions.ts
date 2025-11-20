@@ -168,10 +168,19 @@ export async function deleteLocation(locationId: string) {
   revalidatePath("/settings");
 }
 
+/**
+ * Server action para criar nova entrada de produto
+ * Retorna objeto com sucesso/erro para facilitar feedback no client
+ */
 export async function createProductBatch(formData: FormData) {
   try {
     const tenantId = await getRestaurantIdFromCookie();
-    if (!tenantId) throw new Error("Não autenticado");
+    if (!tenantId) {
+      return {
+        success: false,
+        error: "Não autenticado. Por favor, faça login novamente.",
+      };
+    }
 
     const restaurant = await getRestaurantByTenantId(tenantId);
     const user = await getUser(restaurant.id);
@@ -184,7 +193,10 @@ export async function createProductBatch(formData: FormData) {
     const locationIdRaw = formData.get("locationId");
 
     if (!name || !quantityRaw || !expiryDateRaw) {
-      throw new Error("Campos obrigatórios em falta");
+      return {
+        success: false,
+        error: "Por favor, preencha todos os campos obrigatórios (nome, quantidade e data de validade).",
+      };
     }
 
     const quantity = Number(quantityRaw);
@@ -192,7 +204,10 @@ export async function createProductBatch(formData: FormData) {
     const expiryDate = new Date(String(expiryDateRaw));
 
     if (isNaN(expiryDate.getTime())) {
-      throw new Error("Data de validade inválida");
+      return {
+        success: false,
+        error: "Data de validade inválida. Por favor, selecione uma data válida.",
+      };
     }
 
     await db.productBatch.create({
@@ -212,9 +227,18 @@ export async function createProductBatch(formData: FormData) {
     revalidatePath("/entries/new");
     revalidatePath("/stock");
     revalidatePath("/hoje");
+
+    return {
+      success: true,
+      message: `Entrada "${name}" adicionada com sucesso ao stock!`,
+    };
   } catch (error) {
     console.error("Error creating product batch:", error);
-    throw error; // Re-throw para o client conseguir capturar
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao guardar entrada.";
+    return {
+      success: false,
+      error: errorMessage,
+    };
   }
 }
 

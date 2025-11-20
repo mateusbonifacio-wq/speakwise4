@@ -1,3 +1,8 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createProductBatch } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -5,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 
 import type { Category, Location } from "@prisma/client";
 
@@ -15,14 +21,90 @@ interface NewEntryFormProps {
 }
 
 /**
- * New Entry Form - Mobile-first layout
- * All fields stack vertically on mobile for easy thumb navigation
+ * New Entry Form - Mobile-first layout with enhanced UX
+ * - Shows success/error feedback via toast
+ * - Resets form automatically after successful submission
+ * - Prevents multiple clicks with loading state
  */
 export default function NewEntryForm({
   restaurantId,
   categories,
   locations,
 }: NewEntryFormProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [formData, setFormData] = useState({
+    name: "",
+    quantity: "",
+    unit: "un",
+    expiryDate: "",
+    categoryId: "",
+    locationId: "",
+  });
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isPending) return;
+
+    const formElement = e.currentTarget;
+    const formDataObj = new FormData(formElement);
+
+    startTransition(async () => {
+      try {
+        const result = await createProductBatch(formDataObj);
+
+        if (result?.success) {
+          // Show success toast
+          toast.success(result.message || "Entrada adicionada com sucesso!", {
+            description: "O produto foi adicionado ao stock e pode ser visualizado na página Stock.",
+            duration: 5000,
+          });
+
+          // Reset form
+          setFormData({
+            name: "",
+            quantity: "",
+            unit: "un",
+            expiryDate: "",
+            categoryId: "",
+            locationId: "",
+          });
+
+          // Reset form element (for native HTML form reset)
+          formElement.reset();
+
+          // Refresh router to update any cached data
+          router.refresh();
+        } else {
+          // Show error toast
+          toast.error("Erro ao guardar entrada", {
+            description: result?.error || "Ocorreu um erro ao tentar guardar a entrada. Por favor, tente novamente.",
+            duration: 5000,
+          });
+        }
+      } catch (error) {
+        // Handle unexpected errors
+        console.error("Unexpected error:", error);
+        toast.error("Erro inesperado", {
+          description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
+          duration: 5000,
+        });
+      }
+    });
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   return (
     <div className="space-y-4 md:space-y-6">
       <PageHeader
@@ -35,7 +117,7 @@ export default function NewEntryForm({
           <CardTitle className="text-lg md:text-xl">Detalhes do Produto</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={createProductBatch} className="space-y-4 md:space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
             {/* Mobile-first: All fields stack vertically, full width on mobile */}
             {/* Desktop: Uses 2-column grid for better space utilization */}
             
@@ -47,9 +129,12 @@ export default function NewEntryForm({
               <Input
                 id="name"
                 name="name"
+                value={formData.name}
+                onChange={handleInputChange}
                 placeholder="Ex: Leite meio-gordo"
                 className="h-11 md:h-10 text-base"
                 required
+                disabled={isPending}
               />
             </div>
 
@@ -65,16 +150,21 @@ export default function NewEntryForm({
                   type="number"
                   step="0.01"
                   min="0"
+                  value={formData.quantity}
+                  onChange={handleInputChange}
                   placeholder="Ex: 10"
                   className="flex-1 h-11 md:h-10 text-base"
                   required
+                  disabled={isPending}
                 />
                 <Input
                   name="unit"
+                  value={formData.unit}
+                  onChange={handleInputChange}
                   className="w-full sm:w-24 h-11 md:h-10 text-base"
-                  defaultValue="un"
                   placeholder="un"
                   aria-label="Unidade"
+                  disabled={isPending}
                 />
               </div>
             </div>
@@ -88,8 +178,11 @@ export default function NewEntryForm({
                 id="expiryDate"
                 name="expiryDate"
                 type="date"
+                value={formData.expiryDate}
+                onChange={handleInputChange}
                 className="h-11 md:h-10 text-base"
                 required
+                disabled={isPending}
               />
             </div>
 
@@ -98,7 +191,14 @@ export default function NewEntryForm({
               <Label htmlFor="categoryId" className="text-sm md:text-base font-medium">
                 Categoria
               </Label>
-              <Select name="categoryId">
+              <Select
+                name="categoryId"
+                value={formData.categoryId}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, categoryId: value }))
+                }
+                disabled={isPending}
+              >
                 <SelectTrigger className="h-11 md:h-10 text-base">
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
@@ -117,7 +217,14 @@ export default function NewEntryForm({
               <Label htmlFor="locationId" className="text-sm md:text-base font-medium">
                 Localização
               </Label>
-              <Select name="locationId">
+              <Select
+                name="locationId"
+                value={formData.locationId}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, locationId: value }))
+                }
+                disabled={isPending}
+              >
                 <SelectTrigger className="h-11 md:h-10 text-base">
                   <SelectValue placeholder="Selecione uma localização" />
                 </SelectTrigger>
@@ -133,12 +240,20 @@ export default function NewEntryForm({
 
             {/* Submit button - Full width on mobile, auto on desktop */}
             <div className="pt-4 md:pt-6">
-              <Button 
-                type="submit" 
-                className="w-full md:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700 md:min-w-[200px]" 
+              <Button
+                type="submit"
+                className="w-full md:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700 md:min-w-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
+                disabled={isPending}
               >
-                Guardar entrada
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    A guardar...
+                  </>
+                ) : (
+                  "Guardar entrada"
+                )}
               </Button>
             </div>
           </form>
@@ -147,5 +262,3 @@ export default function NewEntryForm({
     </div>
   );
 }
-
-

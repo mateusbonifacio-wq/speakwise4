@@ -4,6 +4,7 @@ import "./globals.css";
 import { ConditionalNav } from "@/components/conditional-nav";
 import { SyncAuthCookie } from "@/components/sync-auth-cookie";
 import { FloatingActionButton } from "@/components/floating-action-button";
+import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -31,6 +32,8 @@ export default function RootLayout({
           {/* Floating Action Button - Mobile only */}
           <FloatingActionButton />
         </div>
+        {/* Toast notifications */}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
