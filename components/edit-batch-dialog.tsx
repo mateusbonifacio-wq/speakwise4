@@ -41,22 +41,57 @@ export function EditBatchDialog({
 }: EditBatchDialogProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(formData: FormData) {
-    setIsSubmitting(true);
-    await updateProductBatch(batch.id, formData);
-    setIsSubmitting(false);
-    onOpenChange(false);
-    router.refresh();
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      
+      if (!batch?.id) {
+        throw new Error("ID do batch não encontrado");
+      }
+
+      await updateProductBatch(batch.id, formData);
+      setIsSubmitting(false);
+      onOpenChange(false);
+      router.refresh();
+    } catch (err) {
+      console.error("Error updating batch:", err);
+      setIsSubmitting(false);
+      setError(err instanceof Error ? err.message : "Erro ao guardar alterações");
+    }
   }
 
   // Formatar data para input type="date" (YYYY-MM-DD)
   // Garantir que funciona tanto com Date objects como strings
-  const expiryDate =
-    typeof batch.expiryDate === "string"
-      ? new Date(batch.expiryDate)
-      : batch.expiryDate;
-  const expiryDateString = expiryDate.toISOString().split("T")[0];
+  let expiryDateString = "";
+  try {
+    if (!batch?.expiryDate) {
+      expiryDateString = new Date().toISOString().split("T")[0];
+    } else {
+      const expiryDate =
+        typeof batch.expiryDate === "string"
+          ? new Date(batch.expiryDate)
+          : batch.expiryDate instanceof Date
+          ? batch.expiryDate
+          : new Date(batch.expiryDate);
+      
+      if (isNaN(expiryDate.getTime())) {
+        expiryDateString = new Date().toISOString().split("T")[0];
+      } else {
+        expiryDateString = expiryDate.toISOString().split("T")[0];
+      }
+    }
+  } catch (err) {
+    console.error("Error formatting date:", err);
+    expiryDateString = new Date().toISOString().split("T")[0];
+  }
+
+  // Se batch não está disponível, não renderizar
+  if (!batch) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,18 +156,24 @@ export function EditBatchDialog({
               <Label>Categoria</Label>
               <Select
                 name="categoryId"
-                defaultValue={batch.categoryId || undefined}
+                defaultValue={batch.categoryId ? String(batch.categoryId) : ""}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Sem categoria</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
+                  {categories && categories.length > 0 ? (
+                    categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      Nenhuma categoria disponível
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -141,22 +182,34 @@ export function EditBatchDialog({
               <Label>Localização</Label>
               <Select
                 name="locationId"
-                defaultValue={batch.locationId || undefined}
+                defaultValue={batch.locationId ? String(batch.locationId) : ""}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma localização" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Sem localização</SelectItem>
-                  {locations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.name}
+                  {locations && locations.length > 0 ? (
+                    locations.map((location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      Nenhuma localização disponível
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
           </div>
+
+          {error && (
+            <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
           <DialogFooter>
             <Button
