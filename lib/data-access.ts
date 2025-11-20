@@ -90,18 +90,42 @@ export async function getRestaurant() {
   })
 }
 
+/**
+ * Get or create user for a restaurant
+ * Creates unique email per restaurant to avoid unique constraint errors
+ */
 export async function getUser(restaurantId: string) {
+  // Try to find existing user for this restaurant
   const user = await db.user.findFirst({
     where: { restaurantId }
   })
 
   if (user) return user
 
-  return await db.user.create({
-    data: {
-      name: "Demo User",
-      email: "demo@example.com",
-      restaurantId,
+  // Create user with unique email based on restaurantId
+  // This ensures each restaurant has its own user without email conflicts
+  const uniqueEmail = `demo-${restaurantId}@example.com`;
+
+  try {
+    return await db.user.create({
+      data: {
+        name: "Demo User",
+        email: uniqueEmail,
+        restaurantId,
+      }
+    })
+  } catch (error) {
+    // If email already exists (shouldn't happen), try to find the user
+    console.error("Error creating user, trying to find existing:", error);
+    const existingUser = await db.user.findUnique({
+      where: { email: uniqueEmail }
+    });
+    
+    if (existingUser) {
+      return existingUser;
     }
-  })
+    
+    // If still can't find, throw the error
+    throw error;
+  }
 }
