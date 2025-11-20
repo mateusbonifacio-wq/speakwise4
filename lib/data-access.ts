@@ -1,45 +1,39 @@
 import { db } from "@/lib/db"
 
 export async function getRestaurant() {
-  try {
-    const restaurant = await db.restaurant.findFirst({
-      include: {
-        categories: true,
-        locations: true,
-      },
-    })
+  const restaurant = await db.restaurant.findFirst({
+    include: {
+      categories: true,
+      locations: true,
+    },
+  })
 
-    if (restaurant) return restaurant
+  if (restaurant) return restaurant
 
-    // Se não existe, criar restaurante padrão
-    return await db.restaurant.create({
-      data: {
-        name: "Meu Restaurante",
-        alertDaysBeforeExpiry: 3,
-        categories: {
-          create: [
-            { name: "Frescos" },
-            { name: "Congelados" },
-            { name: "Secos" },
-          ],
-        },
-        locations: {
-          create: [
-            { name: "Frigorífico 1" },
-            { name: "Despensa" },
-            { name: "Arca" },
-          ],
-        },
+  return await db.restaurant.create({
+    data: {
+      name: "Meu Restaurante",
+      alertDaysBeforeExpiry: 3,
+      categories: {
+        create: [
+          { name: "Frescos" },
+          { name: "Congelados" },
+          { name: "Secos" },
+        ],
       },
-      include: {
-        categories: true,
-        locations: true,
+      locations: {
+        create: [
+          { name: "Frigorífico 1" },
+          { name: "Despensa" },
+          { name: "Arca" },
+        ],
       },
-    })
-  } catch (error) {
-    console.error("Error getting restaurant:", error);
-    throw new Error("Erro ao aceder à base de dados. Verifique a conexão.");
-  }
+    },
+    include: {
+      categories: true,
+      locations: true,
+    },
+  })
 }
 
 export async function getUser(restaurantId: string) {
