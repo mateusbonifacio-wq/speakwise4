@@ -191,6 +191,9 @@ export async function createProductBatch(formData: FormData) {
     const expiryDateRaw = formData.get("expiryDate");
     const categoryIdRaw = formData.get("categoryId");
     const locationIdRaw = formData.get("locationId");
+    const packagingTypeRaw = formData.get("packagingType");
+    const sizeRaw = formData.get("size");
+    const sizeUnitRaw = formData.get("sizeUnit");
 
     if (!name || !quantityRaw || !expiryDateRaw) {
       return {
@@ -210,6 +213,12 @@ export async function createProductBatch(formData: FormData) {
       };
     }
 
+    // Optional fields
+    const packagingType = packagingTypeRaw && String(packagingTypeRaw).trim() !== "" ? String(packagingTypeRaw).trim() : null;
+    const sizeRawValue = sizeRaw && String(sizeRaw).trim() !== "" ? String(sizeRaw).trim() : null;
+    const size = sizeRawValue && !isNaN(Number(sizeRawValue)) && Number(sizeRawValue) > 0 ? Number(sizeRawValue) : null;
+    const sizeUnit = size && sizeUnitRaw && String(sizeUnitRaw).trim() !== "" ? String(sizeUnitRaw).trim() : null;
+
     await db.productBatch.create({
       data: {
         name,
@@ -220,6 +229,9 @@ export async function createProductBatch(formData: FormData) {
         userId: user.id,
         categoryId: categoryIdRaw && String(categoryIdRaw).trim() !== "" ? String(categoryIdRaw) : null,
         locationId: locationIdRaw && String(locationIdRaw).trim() !== "" ? String(locationIdRaw) : null,
+        packagingType,
+        size,
+        sizeUnit,
       },
     });
 
@@ -257,6 +269,9 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
     const expiryDateRaw = formData.get("expiryDate");
     const categoryIdRaw = formData.get("categoryId");
     const locationIdRaw = formData.get("locationId");
+    const packagingTypeRaw = formData.get("packagingType");
+    const sizeRaw = formData.get("size");
+    const sizeUnitRaw = formData.get("sizeUnit");
 
     if (!name || !quantityRaw || !expiryDateRaw) {
       throw new Error("Campos obrigatórios em falta");
@@ -281,6 +296,12 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
         ? String(locationIdRaw)
         : null;
 
+    // Optional fields
+    const packagingType = packagingTypeRaw && String(packagingTypeRaw).trim() !== "" ? String(packagingTypeRaw).trim() : null;
+    const sizeRawValue = sizeRaw && String(sizeRaw).trim() !== "" ? String(sizeRaw).trim() : null;
+    const size = sizeRawValue && !isNaN(Number(sizeRawValue)) && Number(sizeRawValue) > 0 ? Number(sizeRawValue) : null;
+    const sizeUnit = size && sizeUnitRaw && String(sizeUnitRaw).trim() !== "" ? String(sizeUnitRaw).trim() : null;
+
     await db.productBatch.update({
       where: { id: batchId },
       data: {
@@ -290,6 +311,9 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
         expiryDate,
         categoryId,
         locationId,
+        packagingType,
+        size,
+        sizeUnit,
       },
     });
 

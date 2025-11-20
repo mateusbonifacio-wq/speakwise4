@@ -14,6 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { Category, Location } from "@prisma/client";
 import type { BatchWithRelations } from "@/lib/stock-utils";
 
@@ -35,6 +37,9 @@ export function EditBatchDialog({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(
+    !!(batch.packagingType || (batch.size && batch.sizeUnit))
+  );
 
   // Validação defensiva inicial
   if (!batch || !batch.id) {
@@ -218,6 +223,86 @@ export function EditBatchDialog({
                     ))
                   : null}
               </select>
+            </div>
+
+            {/* Optional Details Section - Collapsible */}
+            <div className="pt-4 md:pt-6 border-t">
+              <button
+                type="button"
+                onClick={() => setShowDetails(!showDetails)}
+                className="flex items-center justify-between w-full text-left mb-4"
+                disabled={isSubmitting}
+              >
+                <Label className="text-sm md:text-base font-medium cursor-pointer">
+                  Detalhes do Produto (Opcional)
+                </Label>
+                {showDetails ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+
+              {showDetails && (
+                <div className="space-y-4 md:space-y-5 animate-in slide-in-from-top-2">
+                  {/* Packaging Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-packagingType" className="text-sm md:text-base font-medium">
+                      Tipo de Embalagem
+                    </Label>
+                    <select
+                      id="edit-packagingType"
+                      name="packagingType"
+                      defaultValue={batch.packagingType ? String(batch.packagingType) : ""}
+                      className="flex h-11 md:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Selecione o tipo de embalagem</option>
+                      <option value="Lata">Lata</option>
+                      <option value="Garrafa">Garrafa</option>
+                      <option value="Caixa">Caixa</option>
+                      <option value="Frasco">Frasco</option>
+                      <option value="Pack">Pack</option>
+                      <option value="Mini">Mini</option>
+                      <option value="Média">Média</option>
+                      <option value="Saco">Saco</option>
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+
+                  {/* Size and Size Unit */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-size" className="text-sm md:text-base font-medium">
+                      Tamanho / Volume
+                    </Label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        id="edit-size"
+                        name="size"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        defaultValue={batch.size ? String(batch.size) : ""}
+                        placeholder="Ex: 330"
+                        className="flex-1 h-11 md:h-10 text-base"
+                        disabled={isSubmitting}
+                      />
+                      <select
+                        id="edit-sizeUnit"
+                        name="sizeUnit"
+                        defaultValue={batch.sizeUnit ? String(batch.sizeUnit) : ""}
+                        className="flex h-11 md:h-10 w-full sm:w-32 rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Unidade</option>
+                        <option value="mL">mL</option>
+                        <option value="L">L</option>
+                        <option value="g">g</option>
+                        <option value="kg">kg</option>
+                        <option value="un">un</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -272,9 +272,20 @@ export function StockViewSimple({
                     >
                       {/* Top row: Product name bold, status badge aligned right */}
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                        <h3 className="text-base md:text-lg font-semibold text-foreground flex-1">
-                          {batch.name}
-                        </h3>
+                        <div className="flex-1">
+                          <h3 className="text-base md:text-lg font-semibold text-foreground">
+                            {batch.name}
+                          </h3>
+                          {/* Display packaging and size info if available */}
+                          {(batch.packagingType || (batch.size && batch.sizeUnit)) && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {[
+                                batch.packagingType,
+                                batch.size && batch.sizeUnit ? `${batch.size} ${batch.sizeUnit}` : null
+                              ].filter(Boolean).join(" · ")}
+                            </p>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <StatusBadge status={getBadgeStatus(status)} label={status.label} />
                           {/* Edit/Delete buttons - Small icon buttons aligned right */}

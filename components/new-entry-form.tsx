@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
 import type { Category, Location } from "@prisma/client";
 
@@ -33,6 +33,7 @@ export default function NewEntryForm({
 }: NewEntryFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [showDetails, setShowDetails] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     quantity: "",
@@ -40,6 +41,9 @@ export default function NewEntryForm({
     expiryDate: "",
     categoryId: "",
     locationId: "",
+    packagingType: "",
+    size: "",
+    sizeUnit: "",
   });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -70,7 +74,11 @@ export default function NewEntryForm({
             expiryDate: "",
             categoryId: "",
             locationId: "",
+            packagingType: "",
+            size: "",
+            sizeUnit: "",
           });
+          setShowDetails(false);
 
           // Reset form element (for native HTML form reset)
           formElement.reset();
@@ -243,6 +251,99 @@ export default function NewEntryForm({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Optional Details Section - Collapsible */}
+            <div className="pt-4 md:pt-6 border-t">
+              <button
+                type="button"
+                onClick={() => setShowDetails(!showDetails)}
+                className="flex items-center justify-between w-full text-left mb-4"
+                disabled={isPending}
+              >
+                <Label className="text-sm md:text-base font-medium cursor-pointer">
+                  Detalhes do Produto (Opcional)
+                </Label>
+                {showDetails ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+
+              {showDetails && (
+                <div className="space-y-4 md:space-y-5 animate-in slide-in-from-top-2">
+                  {/* Packaging Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="packagingType" className="text-sm md:text-base font-medium">
+                      Tipo de Embalagem
+                    </Label>
+                    <Select
+                      name="packagingType"
+                      value={formData.packagingType}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({ ...prev, packagingType: value }))
+                      }
+                      disabled={isPending}
+                    >
+                      <SelectTrigger className="h-11 md:h-10 text-base">
+                        <SelectValue placeholder="Selecione o tipo de embalagem" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Lata">Lata</SelectItem>
+                        <SelectItem value="Garrafa">Garrafa</SelectItem>
+                        <SelectItem value="Caixa">Caixa</SelectItem>
+                        <SelectItem value="Frasco">Frasco</SelectItem>
+                        <SelectItem value="Pack">Pack</SelectItem>
+                        <SelectItem value="Mini">Mini</SelectItem>
+                        <SelectItem value="Média">Média</SelectItem>
+                        <SelectItem value="Saco">Saco</SelectItem>
+                        <SelectItem value="Outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Size and Size Unit */}
+                  <div className="space-y-2">
+                    <Label htmlFor="size" className="text-sm md:text-base font-medium">
+                      Tamanho / Volume
+                    </Label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        id="size"
+                        name="size"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.size}
+                        onChange={handleInputChange}
+                        placeholder="Ex: 330"
+                        className="flex-1 h-11 md:h-10 text-base"
+                        disabled={isPending}
+                      />
+                      <Select
+                        name="sizeUnit"
+                        value={formData.sizeUnit}
+                        onValueChange={(value) =>
+                          setFormData((prev) => ({ ...prev, sizeUnit: value }))
+                        }
+                        disabled={isPending}
+                      >
+                        <SelectTrigger className="w-full sm:w-32 h-11 md:h-10 text-base" aria-label="Unidade do tamanho">
+                          <SelectValue placeholder="Unidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mL">mL</SelectItem>
+                          <SelectItem value="L">L</SelectItem>
+                          <SelectItem value="g">g</SelectItem>
+                          <SelectItem value="kg">kg</SelectItem>
+                          <SelectItem value="un">un</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Submit button - Full width on mobile, auto on desktop */}

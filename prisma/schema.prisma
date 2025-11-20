@@ -98,6 +98,11 @@ model ProductBatch {
   expiryDate   DateTime
   imageUrl     String?
   
+  // Optional product details
+  packagingType String?
+  size         Float?
+  sizeUnit     String?
+  
   status       BatchStatus @default(ACTIVE)
 
   restaurantId String
