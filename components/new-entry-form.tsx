@@ -11,8 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Camera } from "lucide-react";
-import { createWorker } from "tesseract.js";
 import { extractExpiryDate, formatDateForInput, formatDateForDisplay } from "@/lib/ocr-utils";
+
+// Dynamic import for tesseract.js to avoid blocking build
+const loadTesseract = () => import("tesseract.js");
 
 import type { Category, Location } from "@prisma/client";
 
@@ -137,6 +139,10 @@ export default function NewEntryForm({
       const loadingToast = toast.loading("A ler validade...", {
         description: "A processar a imagem. Por favor, aguarde.",
       });
+
+      // Dynamically import Tesseract to avoid blocking build
+      const tesseract = await loadTesseract();
+      const { createWorker } = tesseract;
 
       // Initialize Tesseract worker
       const worker = await createWorker("por"); // Portuguese language
