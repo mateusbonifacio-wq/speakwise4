@@ -51,9 +51,12 @@ export function EditBatchDialog({
   }
 
   // Formatar data para input type="date" (YYYY-MM-DD)
-  const expiryDateString = new Date(batch.expiryDate)
-    .toISOString()
-    .split("T")[0];
+  // Garantir que funciona tanto com Date objects como strings
+  const expiryDate =
+    typeof batch.expiryDate === "string"
+      ? new Date(batch.expiryDate)
+      : batch.expiryDate;
+  const expiryDateString = expiryDate.toISOString().split("T")[0];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

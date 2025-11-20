@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { deleteProductBatch } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +71,19 @@ export function StockView({
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Validação defensiva
+  if (!batches || !Array.isArray(batches)) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-destructive">
+          <p className="text-lg font-medium mb-2">
+            Erro: dados inválidos
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Filtrar batches baseado na pesquisa (case-insensitive)
   const filteredBatches = useMemo(() => {

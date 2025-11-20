@@ -6,9 +6,19 @@ import type {
   Location,
 } from "@prisma/client";
 
-export type BatchWithRelations = ProductBatch & {
-  category: Category | null;
-  location: Location | null;
+// Tipo que aceita tanto Date objects (server) como strings (serializado do server para client)
+export type BatchWithRelations = Omit<ProductBatch, "expiryDate" | "createdAt" | "updatedAt"> & {
+  expiryDate: Date | string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  category: (Omit<Category, "createdAt" | "updatedAt"> & {
+    createdAt: Date | string;
+    updatedAt: Date | string;
+  }) | null;
+  location: (Omit<Location, "createdAt" | "updatedAt"> & {
+    createdAt: Date | string;
+    updatedAt: Date | string;
+  }) | null;
 };
 
 /**

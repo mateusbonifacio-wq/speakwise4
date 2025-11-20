@@ -49,10 +49,10 @@ export default async function StockPage() {
         </Card>
       ) : (
         <StockView
-          batches={batches}
-          restaurant={restaurant}
-          categories={restaurant.categories}
-          locations={restaurant.locations}
+          batches={JSON.parse(JSON.stringify(batches))}
+          restaurant={JSON.parse(JSON.stringify(restaurant))}
+          categories={JSON.parse(JSON.stringify(restaurant.categories))}
+          locations={JSON.parse(JSON.stringify(restaurant.locations))}
         />
       )}
     </div>
