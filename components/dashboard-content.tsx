@@ -59,88 +59,99 @@ export default async function DashboardContent({
     });
 
     return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6 md:space-y-8">
+        {/* Mobile-first header: stack on mobile, row on desktop */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <PageHeader
             title="Visão Geral"
             description="Resumo do estado do stock hoje."
             className="pb-0"
           />
-          <Link href="/nova-entrada">
-            <Button>Nova Entrada</Button>
+          {/* Full-width button on mobile for easy access */}
+          <Link href="/nova-entrada" className="w-full md:w-auto">
+            <Button className="w-full md:w-auto" size="lg">
+              Nova Entrada
+            </Button>
           </Link>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Expirados</CardTitle>
-              <XCircle className="h-4 w-4 text-destructive" />
+        {/* Mobile-first grid: 2x2 on mobile (gap-3), 2 cols on tablet, 4 cols on desktop */}
+        <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Status cards with larger tap targets and better mobile spacing */}
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Expirados</CardTitle>
+              <XCircle className="h-4 w-4 md:h-5 md:w-5 text-destructive flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">
+            <CardContent className="px-4 pb-4">
+              <div className="text-2xl md:text-3xl font-bold text-destructive mb-1">
                 {expiredCount}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground leading-tight">
                 Produtos fora de validade
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Urgente</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Urgente</CardTitle>
+              <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-orange-500 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-500">
+            <CardContent className="px-4 pb-4">
+              <div className="text-2xl md:text-3xl font-bold text-orange-500 mb-1">
                 {urgentCount}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground leading-tight">
                 Usar o mais rápido possível
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Atenção</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-500" />
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Atenção</CardTitle>
+              <Clock className="h-4 w-4 md:h-5 md:w-5 text-yellow-500 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-500">
+            <CardContent className="px-4 pb-4">
+              <div className="text-2xl md:text-3xl font-bold text-yellow-500 mb-1">
                 {warningCount}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground leading-tight">
                 A expirar em breve
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Stock OK</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Stock OK</CardTitle>
+              <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-500">{okCount}</div>
-              <p className="text-xs text-muted-foreground">
+            <CardContent className="px-4 pb-4">
+              <div className="text-2xl md:text-3xl font-bold text-green-500 mb-1">{okCount}</div>
+              <p className="text-xs text-muted-foreground leading-tight">
                 Validade segura
               </p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <h3 className="font-semibold leading-none tracking-tight mb-4">
+        {/* Quick actions - stack on mobile, row on desktop */}
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 md:p-6">
+          <h3 className="text-base md:text-lg font-semibold leading-none tracking-tight mb-3 md:mb-4">
             Ações Rápidas
           </h3>
-          <div className="flex gap-4">
-            <Link href="/stock">
-              <Button variant="outline">Ver Stock Completo</Button>
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+            <Link href="/stock" className="flex-1">
+              <Button variant="outline" className="w-full" size="lg">
+                Ver Stock Completo
+              </Button>
             </Link>
-            <Link href="/definicoes">
-              <Button variant="outline">Configurar Alertas</Button>
+            <Link href="/definicoes" className="flex-1">
+              <Button variant="outline" className="w-full" size="lg">
+                Configurar Alertas
+              </Button>
             </Link>
           </div>
         </div>

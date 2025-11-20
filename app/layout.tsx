@@ -23,7 +23,8 @@ export default function RootLayout({
         <SyncAuthCookie />
         <div className="relative flex min-h-screen flex-col">
           <ConditionalNav />
-          <main className="flex-1 container py-6">
+          {/* Mobile-first padding: py-4 px-4 on mobile, py-6 on desktop */}
+          <main className="flex-1 container py-4 px-4 md:py-6 md:px-6 max-w-4xl mx-auto">
             {children}
           </main>
         </div>

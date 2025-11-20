@@ -119,15 +119,15 @@ export function StockViewSimple({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Search bar */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="space-y-4 md:space-y-6">
+      {/* Mobile-first search bar - Full width on mobile, max-w-sm on desktop */}
+      <div className="relative w-full md:max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 md:h-5 md:w-5 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Pesquisar produto..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
+          className="pl-9 md:pl-10 h-11 md:h-10 text-base"
         />
       </div>
 
@@ -148,68 +148,73 @@ export function StockViewSimple({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {categoryNames.map((categoryName) => {
             const categoryBatches = batchesByCategory[categoryName];
 
             return (
               <Card key={categoryName} className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-semibold">
+                <CardHeader className="pb-3 px-4 pt-4 md:px-6 md:pt-6">
+                  <CardTitle className="text-lg md:text-xl font-semibold">
                     {categoryName}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
+                <CardContent className="px-4 pb-4 md:px-6 md:pb-6">
+                  <div className="space-y-3 md:space-y-4">
                     {categoryBatches.map((batch) => {
                       const status = getBatchStatus(batch, restaurant);
 
                       return (
                         <div
                           key={batch.id}
-                          className="flex flex-col gap-2 rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+                          className="flex flex-col gap-3 rounded-lg border p-3 md:p-4 hover:bg-muted/50 transition-colors"
                         >
-                          <div className="flex items-start justify-between gap-4">
-                            <h3 className="text-lg font-semibold text-foreground">
+                          {/* Mobile-first header: stack on mobile, row on desktop */}
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <h3 className="text-base md:text-lg font-semibold text-foreground flex-1">
                               {batch.name}
                             </h3>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-shrink-0">
                               <Badge className={getBadgeClassName(status)}>
                                 {status.label}
                               </Badge>
+                              {/* Larger touch targets for mobile - min 44x44px */}
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8"
+                                className="h-10 w-10 md:h-9 md:w-9 touch-manipulation"
                                 onClick={() => handleEdit(batch)}
+                                aria-label="Editar entrada"
                               >
-                                <Edit className="h-4 w-4" />
+                                <Edit className="h-4 w-4 md:h-4 md:w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                className="h-10 w-10 md:h-9 md:w-9 text-destructive hover:text-destructive touch-manipulation"
                                 onClick={() => handleDelete(batch)}
+                                aria-label="Eliminar entrada"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4 md:h-4 md:w-4" />
                               </Button>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground md:grid-cols-3">
+                          {/* Product details - Stack on mobile, grid on desktop */}
+                          <div className="grid grid-cols-1 gap-2 text-sm md:text-base text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
                             <div className="flex items-center gap-2">
-                              <Package className="h-4 w-4" />
+                              <Package className="h-4 w-4 flex-shrink-0" />
                               <span className="font-medium text-foreground">
                                 {batch.quantity} {batch.unit}
                               </span>
                             </div>
                             {batch.location && (
                               <div className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4" />
-                                <span>{batch.location.name}</span>
+                                <MapPin className="h-4 w-4 flex-shrink-0" />
+                                <span className="truncate">{batch.location.name}</span>
                               </div>
                             )}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-1">
                               <span className="font-medium text-foreground">
                                 Validade:
                               </span>

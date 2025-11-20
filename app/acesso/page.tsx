@@ -56,21 +56,23 @@ export default function AccessPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto mb-4 rounded-full bg-primary/10 p-3">
-            <Lock className="h-6 w-6 text-primary" />
+    <div className="flex min-h-screen items-center justify-center px-4 py-8">
+      {/* Mobile-first card: full width on mobile, max-w-sm on desktop with better spacing */}
+      <Card className="w-full max-w-sm shadow-lg">
+        <CardHeader className="space-y-2 text-center pb-4">
+          <div className="mx-auto mb-3 rounded-full bg-primary/10 p-3 md:p-4">
+            <Lock className="h-6 w-6 md:h-7 md:w-7 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold">Acesso Clearstok</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl md:text-2xl font-bold">Acesso Clearstok</CardTitle>
+          <CardDescription className="text-sm md:text-base">
             Introduza o PIN do seu restaurante.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="pin">PIN</Label>
+              <Label htmlFor="pin" className="text-sm font-medium">PIN</Label>
+              {/* Large PIN input for easy mobile entry */}
               <Input
                 id="pin"
                 type="text"
@@ -80,7 +82,7 @@ export default function AccessPage() {
                 onChange={handlePinChange}
                 placeholder="0000"
                 maxLength={4}
-                className="text-center text-2xl tracking-widest"
+                className="text-center text-2xl md:text-3xl tracking-widest h-14 md:h-16"
                 autoFocus
                 disabled={isSubmitting}
                 required
@@ -93,9 +95,10 @@ export default function AccessPage() {
               </div>
             )}
 
+            {/* Full-width button with good tap target */}
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-11 md:h-12 text-base md:text-lg font-semibold"
               size="lg"
               disabled={isSubmitting || pin.length !== 4}
             >

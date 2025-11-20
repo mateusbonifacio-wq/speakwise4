@@ -6,6 +6,10 @@ interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   description?: string
 }
 
+/**
+ * Page Header - Mobile-first component
+ * Responsive typography and spacing for mobile and desktop
+ */
 export function PageHeader({
   title,
   description,
@@ -13,14 +17,16 @@ export function PageHeader({
   ...props
 }: PageHeaderProps) {
   return (
-    <div className={cn("space-y-2 pb-4", className)} {...props}>
-      <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+    <div className={cn("space-y-2 pb-3 md:pb-4", className)} {...props}>
+      <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">
+        {title}
+      </h1>
       {description && (
-        <p className="text-muted-foreground">
+        <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
           {description}
         </p>
       )}
-      <Separator className="my-4" />
+      <Separator className="my-3 md:my-4" />
     </div>
   )
 }

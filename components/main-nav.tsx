@@ -45,10 +45,12 @@ export function MainNav() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+      {/* Mobile-first: h-12 on mobile for compact, h-14 on desktop */}
+      <div className="container flex h-12 md:h-14 items-center px-4 md:px-6">
+        {/* Desktop navigation - hidden on mobile */}
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block">
+            <span className="font-bold">
               Clearstok
             </span>
           </Link>
@@ -58,8 +60,8 @@ export function MainNav() {
                 key={route.href}
                 href={route.href}
                 className={cn(
-                  "transition-colors hover:text-foreground/80",
-                  route.active ? "text-foreground" : "text-foreground/60"
+                  "transition-colors hover:text-foreground/80 px-2 py-1 rounded-md",
+                  route.active ? "text-foreground bg-accent" : "text-foreground/60"
                 )}
               >
                 {route.label}
@@ -68,45 +70,51 @@ export function MainNav() {
           </nav>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Visible on mobile, hidden on desktop */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button
               variant="ghost"
-              className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
+              size="icon"
+              className="md:hidden h-10 w-10" // Larger touch target on mobile
+              aria-label="Toggle Menu"
             >
               <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="pr-0">
+          <SheetContent side="left" className="w-[280px] sm:w-[300px]">
             <Link
               href="/"
-              className="flex items-center"
+              className="flex items-center py-4"
               onClick={() => setOpen(false)}
             >
-              <span className="font-bold">Clearstok</span>
+              <span className="text-lg font-bold">Clearstok</span>
             </Link>
-            <div className="my-4 pb-10 pl-6">
-              <div className="flex flex-col space-y-3">
-                {routes.map((route) => (
-                  <Link
-                    key={route.href}
-                    href={route.href}
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      "flex items-center gap-2 text-sm font-medium transition-colors hover:text-foreground/80",
-                      route.active ? "text-foreground" : "text-foreground/60"
-                    )}
-                  >
-                    <route.icon className="h-4 w-4" />
-                    {route.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <nav className="flex flex-col space-y-1 mt-2">
+              {routes.map((route) => (
+                <Link
+                  key={route.href}
+                  href={route.href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-3 text-base font-medium rounded-lg transition-colors",
+                    route.active 
+                      ? "text-foreground bg-accent" 
+                      : "text-foreground/70 hover:text-foreground hover:bg-accent/50"
+                  )}
+                >
+                  <route.icon className="h-5 w-5" />
+                  {route.label}
+                </Link>
+              ))}
+            </nav>
           </SheetContent>
         </Sheet>
+
+        {/* Mobile: Show app name next to menu button */}
+        <Link href="/" className="md:hidden ml-2 font-bold text-base">
+          Clearstok
+        </Link>
         
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">

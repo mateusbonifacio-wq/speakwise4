@@ -104,30 +104,38 @@ export function EditBatchDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      {/* Mobile-first dialog: full width on mobile, max-w-md on desktop */}
+      <DialogContent className="w-[95vw] max-w-md sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <form action={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Editar Entrada</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg md:text-xl">Editar Entrada</DialogTitle>
+            <DialogDescription className="text-sm md:text-base">
               Atualize os detalhes desta entrada de stock.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          {/* Mobile-first form: Stack fields on mobile, 2-col on desktop */}
+          <div className="grid gap-4 md:gap-5 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Nome do produto</Label>
+              <Label htmlFor="edit-name" className="text-sm md:text-base font-medium">
+                Nome do produto
+              </Label>
               <Input
                 id="edit-name"
                 name="name"
                 defaultValue={batch.name}
                 placeholder="Ex: Leite meio-gordo"
+                className="h-11 md:h-10 text-base"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Quantity and Unit: Stack on mobile, side-by-side on desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-quantity">Quantidade</Label>
+                <Label htmlFor="edit-quantity" className="text-sm md:text-base font-medium">
+                  Quantidade
+                </Label>
                 <Input
                   id="edit-quantity"
                   name="quantity"
@@ -135,39 +143,49 @@ export function EditBatchDialog({
                   step="0.01"
                   min="0"
                   defaultValue={batch.quantity}
+                  className="h-11 md:h-10 text-base"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-unit">Unidade</Label>
+                <Label htmlFor="edit-unit" className="text-sm md:text-base font-medium">
+                  Unidade
+                </Label>
                 <Input
                   id="edit-unit"
                   name="unit"
                   defaultValue={batch.unit}
-                  className="w-full"
+                  className="w-full h-11 md:h-10 text-base"
                 />
               </div>
             </div>
 
+            {/* Expiry date - Full width, larger for mobile date picker */}
             <div className="space-y-2">
-              <Label htmlFor="edit-expiryDate">Data de validade</Label>
+              <Label htmlFor="edit-expiryDate" className="text-sm md:text-base font-medium">
+                Data de validade
+              </Label>
               <Input
                 id="edit-expiryDate"
                 name="expiryDate"
                 type="date"
                 defaultValue={expiryDateString}
+                className="h-11 md:h-10 text-base"
                 required
               />
             </div>
 
+            {/* Category - Full width select */}
             <div className="space-y-2">
-              <Label htmlFor="edit-categoryId">Categoria</Label>
+              <Label htmlFor="edit-categoryId" className="text-sm md:text-base font-medium">
+                Categoria
+              </Label>
               <select
                 id="edit-categoryId"
                 name="categoryId"
                 defaultValue={batch.categoryId ? String(batch.categoryId) : ""}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 md:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="">Sem categoria</option>
                 {categories && categories.length > 0
@@ -180,13 +198,16 @@ export function EditBatchDialog({
               </select>
             </div>
 
+            {/* Location - Full width select */}
             <div className="space-y-2">
-              <Label htmlFor="edit-locationId">Localização</Label>
+              <Label htmlFor="edit-locationId" className="text-sm md:text-base font-medium">
+                Localização
+              </Label>
               <select
                 id="edit-locationId"
                 name="locationId"
                 defaultValue={batch.locationId ? String(batch.locationId) : ""}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 md:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="">Sem localização</option>
                 {locations && locations.length > 0
@@ -201,21 +222,29 @@ export function EditBatchDialog({
           </div>
 
           {error && (
-            <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm md:text-base text-destructive">
               {error}
             </div>
           )}
 
-          <DialogFooter>
+          {/* Mobile-first footer: Stack on mobile, row on desktop */}
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
+              className="w-full sm:w-auto order-2 sm:order-1"
+              size="lg"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full sm:w-auto order-1 sm:order-2"
+              size="lg"
+            >
               {isSubmitting ? "A guardar..." : "Guardar alterações"}
             </Button>
           </DialogFooter>
