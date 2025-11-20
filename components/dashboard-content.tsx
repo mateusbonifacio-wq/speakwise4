@@ -77,64 +77,72 @@ export default async function DashboardContent({
 
         {/* Mobile-first grid: 2x2 on mobile (gap-3), 2 cols on tablet, 4 cols on desktop */}
         <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {/* Status cards with mobile-first styling */}
-          <Card className="bg-white rounded-xl shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow">
-            <div className="flex flex-row items-center justify-between mb-3">
-              <CardTitle className="text-xs md:text-sm font-medium">Expirados</CardTitle>
-              <XCircle className="h-4 w-4 md:h-5 md:w-5 text-destructive flex-shrink-0" />
-            </div>
-            <div>
-              <div className="text-2xl md:text-3xl font-bold text-destructive mb-1">
-                {expiredCount}
+          {/* Status cards with mobile-first styling - Clickable links to Stock page with status filter */}
+          <Link href="/stock?status=expired" className="block">
+            <Card className="bg-white rounded-xl shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow">
+              <div className="flex flex-row items-center justify-between mb-3">
+                <CardTitle className="text-xs md:text-sm font-medium">Expirados</CardTitle>
+                <XCircle className="h-4 w-4 md:h-5 md:w-5 text-destructive flex-shrink-0" />
               </div>
-              <p className="text-xs text-muted-foreground leading-tight">
-                Produtos fora de validade
-              </p>
-            </div>
-          </Card>
-
-          <Card className="bg-white rounded-xl shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow">
-            <div className="flex flex-row items-center justify-between mb-3">
-              <CardTitle className="text-xs md:text-sm font-medium">Urgente</CardTitle>
-              <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-orange-500 flex-shrink-0" />
-            </div>
-            <div>
-              <div className="text-2xl md:text-3xl font-bold text-orange-500 mb-1">
-                {urgentCount}
+              <div>
+                <div className="text-2xl md:text-3xl font-bold text-destructive mb-1">
+                  {expiredCount}
+                </div>
+                <p className="text-xs text-muted-foreground leading-tight">
+                  Produtos fora de validade
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground leading-tight">
-                Usar o mais rápido possível
-              </p>
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="bg-white rounded-xl shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow">
-            <div className="flex flex-row items-center justify-between mb-3">
-              <CardTitle className="text-xs md:text-sm font-medium">Atenção</CardTitle>
-              <Clock className="h-4 w-4 md:h-5 md:w-5 text-yellow-500 flex-shrink-0" />
-            </div>
-            <div>
-              <div className="text-2xl md:text-3xl font-bold text-yellow-500 mb-1">
-                {warningCount}
+          <Link href="/stock?status=urgent" className="block">
+            <Card className="bg-white rounded-xl shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow">
+              <div className="flex flex-row items-center justify-between mb-3">
+                <CardTitle className="text-xs md:text-sm font-medium">Urgente</CardTitle>
+                <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-orange-500 flex-shrink-0" />
               </div>
-              <p className="text-xs text-muted-foreground leading-tight">
-                A expirar em breve
-              </p>
-            </div>
-          </Card>
+              <div>
+                <div className="text-2xl md:text-3xl font-bold text-orange-500 mb-1">
+                  {urgentCount}
+                </div>
+                <p className="text-xs text-muted-foreground leading-tight">
+                  Usar o mais rápido possível
+                </p>
+              </div>
+            </Card>
+          </Link>
 
-          <Card className="bg-white rounded-xl shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow">
-            <div className="flex flex-row items-center justify-between mb-3">
-              <CardTitle className="text-xs md:text-sm font-medium">Stock OK</CardTitle>
-              <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500 flex-shrink-0" />
-            </div>
-            <div>
-              <div className="text-2xl md:text-3xl font-bold text-green-500 mb-1">{okCount}</div>
-              <p className="text-xs text-muted-foreground leading-tight">
-                Validade segura
-              </p>
-            </div>
-          </Card>
+          <Link href="/stock?status=attention" className="block">
+            <Card className="bg-white rounded-xl shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow">
+              <div className="flex flex-row items-center justify-between mb-3">
+                <CardTitle className="text-xs md:text-sm font-medium">Atenção</CardTitle>
+                <Clock className="h-4 w-4 md:h-5 md:w-5 text-yellow-500 flex-shrink-0" />
+              </div>
+              <div>
+                <div className="text-2xl md:text-3xl font-bold text-yellow-500 mb-1">
+                  {warningCount}
+                </div>
+                <p className="text-xs text-muted-foreground leading-tight">
+                  A expirar em breve
+                </p>
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/stock?status=ok" className="block">
+            <Card className="bg-white rounded-xl shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow">
+              <div className="flex flex-row items-center justify-between mb-3">
+                <CardTitle className="text-xs md:text-sm font-medium">Stock OK</CardTitle>
+                <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500 flex-shrink-0" />
+              </div>
+              <div>
+                <div className="text-2xl md:text-3xl font-bold text-green-500 mb-1">{okCount}</div>
+                <p className="text-xs text-muted-foreground leading-tight">
+                  Validade segura
+                </p>
+              </div>
+            </Card>
+          </Link>
         </div>
 
         {/* Quick actions - stack on mobile, row on desktop */}

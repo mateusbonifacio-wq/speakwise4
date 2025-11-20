@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { StockViewSimple } from "./stock-view-simple";
 import type { BatchWithRelations } from "@/lib/stock-utils";
 import type { Restaurant } from "@prisma/client";
@@ -22,11 +23,15 @@ export function StockViewWrapper({
   categories,
   locations,
 }: StockViewWrapperProps) {
+  const searchParams = useSearchParams();
   const [convertedData, setConvertedData] = useState<{
     batches: BatchWithRelations[];
     restaurant: Restaurant;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get initial status filter from URL
+  const initialStatusFilter = searchParams?.get("status") || undefined;
 
   useEffect(() => {
     try {
@@ -139,6 +144,7 @@ export function StockViewWrapper({
       {...convertedData}
       categories={Array.isArray(categories) ? categories : []}
       locations={Array.isArray(locations) ? locations : []}
+      initialStatusFilter={initialStatusFilter}
     />
   );
 }

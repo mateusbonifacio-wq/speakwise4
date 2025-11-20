@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { deleteProductBatch } from "@/app/actions";
 import { Button } from "@/components/ui/button";
@@ -27,18 +27,29 @@ interface StockViewSimpleProps {
   restaurant: Restaurant;
   categories: Category[];
   locations: Location[];
+  initialStatusFilter?: string;
 }
 
 /**
  * Versão simplificada do StockView com Search bar
  */
+export type StatusFilter = "all" | "expired" | "urgent" | "attention" | "ok";
+
 export function StockViewSimple({
   batches,
   restaurant,
   categories,
   locations,
+  initialStatusFilter,
 }: StockViewSimpleProps) {
   const router = useRouter();
+  
+  // Initialize status filter from prop (passed from wrapper that reads URL)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(
+    (initialStatusFilter && ["expired", "urgent", "attention", "ok"].includes(initialStatusFilter)
+      ? initialStatusFilter
+      : "all") as StatusFilter
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<BatchWithRelations | null>(
@@ -49,6 +60,15 @@ export function StockViewSimple({
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Update status filter when prop changes (e.g., from navigation)
+  useEffect(() => {
+    if (initialStatusFilter && ["expired", "urgent", "attention", "ok"].includes(initialStatusFilter)) {
+      setStatusFilter(initialStatusFilter as StatusFilter);
+    } else {
+      setStatusFilter("all");
+    }
+  }, [initialStatusFilter]);
 
   const handleEdit = (batch: BatchWithRelations) => {
     if (!batch || !batch.id) {
@@ -85,14 +105,38 @@ export function StockViewSimple({
     );
   }
 
-  // Filtrar batches baseado na pesquisa
+  // Update URL when status filter changes (optional but useful for sharing/bookmarking)
+  const handleStatusFilterChange = (filter: StatusFilter) => {
+    setStatusFilter(filter);
+    if (filter === "all") {
+      router.push("/stock", { scroll: false });
+    } else {
+      router.push(`/stock?status=${filter}`, { scroll: false });
+    }
+  };
+
+  // Filtrar batches baseado na pesquisa e no filtro de status
   const filteredBatches = useMemo(() => {
-    if (!searchQuery.trim()) return batches;
-    const query = searchQuery.toLowerCase();
-    return batches.filter((batch) =>
-      batch.name?.toLowerCase().includes(query)
-    );
-  }, [batches, searchQuery]);
+    let filtered = batches;
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((batch) => {
+        const status = getBatchStatus(batch, restaurant);
+        return status.status === statusFilter;
+      });
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((batch) =>
+        batch.name?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [batches, searchQuery, statusFilter, restaurant]);
 
   // Agrupar por categoria
   const batchesByCategory = useMemo(
@@ -115,6 +159,70 @@ export function StockViewSimple({
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Status filters - Mobile-first pill buttons */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <Button
+          variant={statusFilter === "all" ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleStatusFilterChange("all")}
+          className={`py-1 px-3 rounded-full text-sm font-medium transition-colors ${
+            statusFilter === "all"
+              ? "bg-indigo-600 text-white hover:bg-indigo-700"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300"
+          }`}
+        >
+          Todos
+        </Button>
+        <Button
+          variant={statusFilter === "expired" ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleStatusFilterChange("expired")}
+          className={`py-1 px-3 rounded-full text-sm font-medium transition-colors ${
+            statusFilter === "expired"
+              ? "bg-indigo-600 text-white hover:bg-indigo-700"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300"
+          }`}
+        >
+          Expirados
+        </Button>
+        <Button
+          variant={statusFilter === "urgent" ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleStatusFilterChange("urgent")}
+          className={`py-1 px-3 rounded-full text-sm font-medium transition-colors ${
+            statusFilter === "urgent"
+              ? "bg-indigo-600 text-white hover:bg-indigo-700"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300"
+          }`}
+        >
+          Urgente
+        </Button>
+        <Button
+          variant={statusFilter === "attention" ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleStatusFilterChange("attention")}
+          className={`py-1 px-3 rounded-full text-sm font-medium transition-colors ${
+            statusFilter === "attention"
+              ? "bg-indigo-600 text-white hover:bg-indigo-700"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300"
+          }`}
+        >
+          Atenção
+        </Button>
+        <Button
+          variant={statusFilter === "ok" ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleStatusFilterChange("ok")}
+          className={`py-1 px-3 rounded-full text-sm font-medium transition-colors ${
+            statusFilter === "ok"
+              ? "bg-indigo-600 text-white hover:bg-indigo-700"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300"
+          }`}
+        >
+          OK
+        </Button>
+      </div>
+
       {/* Mobile-first search bar - Full width with border-gray-300 styling */}
       <div className="relative w-full mb-4">
         <Search className="absolute left-3 top-1/2 h-4 w-4 md:h-5 md:w-5 -translate-y-1/2 text-muted-foreground" />
@@ -131,13 +239,13 @@ export function StockViewSimple({
           <CardContent className="py-12 text-center text-muted-foreground">
             <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
             <p className="text-lg font-medium mb-2">
-              {searchQuery
+              {searchQuery || statusFilter !== "all"
                 ? "Nenhum produto encontrado"
                 : "Ainda não existem produtos em stock"}
             </p>
             <p className="text-sm">
-              {searchQuery
-                ? "Tente pesquisar por outro termo."
+              {searchQuery || statusFilter !== "all"
+                ? "Tente pesquisar por outro termo ou altere o filtro."
                 : 'Adicione uma entrada em "Nova Entrada".'}
             </p>
           </CardContent>
