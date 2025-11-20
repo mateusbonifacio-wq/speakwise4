@@ -41,6 +41,7 @@ model Category {
   id           String         @id @default(cuid())
   name         String
   alertDaysBeforeExpiry Int?
+  warningDaysBeforeExpiry Int?
   
   restaurantId String
   restaurant   Restaurant     @relation(fields: [restaurantId], references: [id])

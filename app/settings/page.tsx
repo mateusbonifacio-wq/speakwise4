@@ -72,7 +72,7 @@ export default async function SettingsPage() {
               <CardHeader>
                 <CardTitle>Categorias Existentes</CardTitle>
                 <CardDescription>
-                  Pode definir dias de aviso específicos por categoria. Se deixar vazio, usa o padrão geral.
+                  Pode definir dois níveis de aviso por categoria. Se deixar vazio, usa o padrão geral.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -81,9 +81,18 @@ export default async function SettingsPage() {
                     <li key={cat.id} className="flex items-center justify-between gap-4 p-2 bg-muted rounded-md">
                       <div className="flex-1">
                         <div className="font-medium">{cat.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Aviso: {cat.alertDaysBeforeExpiry ?? restaurant.alertDaysBeforeExpiry} dias antes da validade
-                          {cat.alertDaysBeforeExpiry == null && " (padrão)"}
+                        <div className="text-xs text-muted-foreground space-y-0.5">
+                          <div>
+                            Aviso 1 (em breve):{" "}
+                            {cat.warningDaysBeforeExpiry ?? cat.alertDaysBeforeExpiry ?? restaurant.alertDaysBeforeExpiry}{" "}
+                            dias antes
+                            {cat.warningDaysBeforeExpiry == null && " (padrão)"}
+                          </div>
+                          <div>
+                            Aviso 2 (urgente):{" "}
+                            {cat.alertDaysBeforeExpiry ?? restaurant.alertDaysBeforeExpiry} dias antes
+                            {cat.alertDaysBeforeExpiry == null && " (padrão)"}
+                          </div>
                         </div>
                       </div>
                       <form
@@ -91,13 +100,23 @@ export default async function SettingsPage() {
                         className="flex items-end gap-2"
                       >
                         <div className="space-y-1">
-                          <label className="text-xs font-medium">Dias de aviso</label>
+                          <label className="text-xs font-medium">Aviso 1 (dias)</label>
                           <Input
-                            name="alertDays"
+                            name="warningAlertDays"
+                            type="number"
+                            min="1"
+                            defaultValue={cat.warningDaysBeforeExpiry ?? ""}
+                            className="w-20"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Aviso 2 (dias)</label>
+                          <Input
+                            name="urgentAlertDays"
                             type="number"
                             min="1"
                             defaultValue={cat.alertDaysBeforeExpiry ?? ""}
-                            className="w-24"
+                            className="w-20"
                           />
                         </div>
                         <Button type="submit" variant="outline" size="sm">

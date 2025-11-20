@@ -53,16 +53,24 @@ import { getRestaurant, getUser } from "@/lib/data-access";
  }
 
 export async function updateCategoryAlert(categoryId: string, formData: FormData) {
-  const alertRaw = formData.get("alertDays");
-  const alertDays = alertRaw ? Number(alertRaw) : null;
+  const warningRaw = formData.get("warningAlertDays");
+  const urgentRaw = formData.get("urgentAlertDays");
+
+  const warning =
+    warningRaw && !isNaN(Number(warningRaw)) && Number(warningRaw) > 0
+      ? Number(warningRaw)
+      : null;
+
+  const urgent =
+    urgentRaw && !isNaN(Number(urgentRaw)) && Number(urgentRaw) > 0
+      ? Number(urgentRaw)
+      : null;
 
   await db.category.update({
     where: { id: categoryId },
     data: {
-      alertDaysBeforeExpiry:
-        alertDays !== null && !isNaN(alertDays) && alertDays > 0
-          ? alertDays
-          : null,
+      warningDaysBeforeExpiry: warning,
+      alertDaysBeforeExpiry: urgent,
     },
   });
 

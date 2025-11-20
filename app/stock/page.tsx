@@ -39,16 +39,29 @@ export default async function StockPage() {
       today
     );
 
-    const alertDays =
+    const urgentDays =
       batch.category?.alertDaysBeforeExpiry ??
       restaurant.alertDaysBeforeExpiry;
+
+    const warningDays =
+      batch.category?.warningDaysBeforeExpiry ?? urgentDays;
 
     if (daysToExpiry < 0) {
       return { label: "Expirado", variant: "destructive" as const };
     }
 
-    if (daysToExpiry <= alertDays) {
-      return { label: `A expirar (${daysToExpiry} dias)`, variant: "default" as const };
+    if (daysToExpiry <= urgentDays) {
+      return {
+        label: `Urgente usar (${daysToExpiry} dias)`,
+        variant: "destructive" as const,
+      };
+    }
+
+    if (daysToExpiry <= warningDays) {
+      return {
+        label: `A expirar em breve (${daysToExpiry} dias)`,
+        variant: "default" as const,
+      };
     }
 
     return { label: "OK", variant: "secondary" as const };
