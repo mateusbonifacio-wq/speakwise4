@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, differenceInCalendarDays } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +30,29 @@ export default async function StockPage() {
       expiryDate: "asc",
     },
   });
+
+  const today = new Date();
+
+  function getStatus(batch: (typeof batches)[number]) {
+    const daysToExpiry = differenceInCalendarDays(
+      new Date(batch.expiryDate),
+      today
+    );
+
+    const alertDays =
+      batch.category?.alertDaysBeforeExpiry ??
+      restaurant.alertDaysBeforeExpiry;
+
+    if (daysToExpiry < 0) {
+      return { label: "Expirado", variant: "destructive" as const };
+    }
+
+    if (daysToExpiry <= alertDays) {
+      return { label: `A expirar (${daysToExpiry} dias)`, variant: "default" as const };
+    }
+
+    return { label: "OK", variant: "secondary" as const };
+  }
 
   return (
     <div className="space-y-6">
@@ -62,17 +85,14 @@ export default async function StockPage() {
                 {format(new Date(batch.expiryDate), "dd/MM/yyyy")}
               </TableCell>
               <TableCell>
-                <Badge
-                  variant={
-                    batch.status === "ACTIVE"
-                      ? "default"
-                      : batch.status === "EXPIRED"
-                      ? "destructive"
-                      : "secondary"
-                  }
-                >
-                  {batch.status}
-                </Badge>
+                {(() => {
+                  const status = getStatus(batch);
+                  return (
+                    <Badge variant={status.variant}>
+                      {status.label}
+                    </Badge>
+                  );
+                })()}
               </TableCell>
             </TableRow>
           ))}

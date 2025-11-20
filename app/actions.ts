@@ -2,7 +2,7 @@
 
  import { revalidatePath } from "next/cache";
  import { db } from "@/lib/db";
- import { getRestaurant, getUser } from "@/lib/data-access";
+import { getRestaurant, getUser } from "@/lib/data-access";
 
  export async function updateSettings(formData: FormData) {
    const restaurant = await getRestaurant();
@@ -51,6 +51,23 @@
 
    revalidatePath("/settings");
  }
+
+export async function updateCategoryAlert(categoryId: string, formData: FormData) {
+  const alertRaw = formData.get("alertDays");
+  const alertDays = alertRaw ? Number(alertRaw) : null;
+
+  await db.category.update({
+    where: { id: categoryId },
+    data: {
+      alertDaysBeforeExpiry:
+        alertDays !== null && !isNaN(alertDays) && alertDays > 0
+          ? alertDays
+          : null,
+    },
+  });
+
+  revalidatePath("/settings");
+}
 
  export async function deleteCategory(categoryId: string) {
    await db.category.delete({

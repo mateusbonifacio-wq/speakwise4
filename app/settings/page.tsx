@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { updateSettings, createCategory, createLocation, deleteCategory, deleteLocation } from "@/app/actions"
+import { updateSettings, createCategory, createLocation, deleteCategory, deleteLocation, updateCategoryAlert } from "@/app/actions"
 import { Trash2 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -38,7 +38,7 @@ export default async function SettingsPage() {
             <CardContent>
               <form action={updateSettings} className="flex items-end gap-4">
                 <div className="space-y-2 flex-1 max-w-sm">
-                  <label className="text-sm font-medium">Dias antes de expirar</label>
+                  <label className="text-sm font-medium">Dias antes de expirar (padrão)</label>
                   <Input 
                     name="alertDays" 
                     type="number" 
@@ -71,12 +71,39 @@ export default async function SettingsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Categorias Existentes</CardTitle>
+                <CardDescription>
+                  Pode definir dias de aviso específicos por categoria. Se deixar vazio, usa o padrão geral.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
                   {restaurant.categories.map((cat) => (
-                    <li key={cat.id} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                      <span>{cat.name}</span>
+                    <li key={cat.id} className="flex items-center justify-between gap-4 p-2 bg-muted rounded-md">
+                      <div className="flex-1">
+                        <div className="font-medium">{cat.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Aviso: {cat.alertDaysBeforeExpiry ?? restaurant.alertDaysBeforeExpiry} dias antes da validade
+                          {cat.alertDaysBeforeExpiry == null && " (padrão)"}
+                        </div>
+                      </div>
+                      <form
+                        action={updateCategoryAlert.bind(null, cat.id)}
+                        className="flex items-end gap-2"
+                      >
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Dias de aviso</label>
+                          <Input
+                            name="alertDays"
+                            type="number"
+                            min="1"
+                            defaultValue={cat.alertDaysBeforeExpiry ?? ""}
+                            className="w-24"
+                          />
+                        </div>
+                        <Button type="submit" variant="outline" size="sm">
+                          Guardar
+                        </Button>
+                      </form>
                       <form action={deleteCategory.bind(null, cat.id)}>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
                           <Trash2 className="h-4 w-4" />
