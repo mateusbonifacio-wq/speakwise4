@@ -137,34 +137,58 @@ export async function updateCategoryAlert(categoryId: string, formData: FormData
 }
 
 export async function updateProductBatch(batchId: string, formData: FormData) {
-  const name = String(formData.get("name") ?? "").trim();
-  const quantityRaw = formData.get("quantity");
-  const unitRaw = String(formData.get("unit") ?? "").trim();
-  const expiryDateRaw = formData.get("expiryDate");
-  const categoryIdRaw = formData.get("categoryId");
-  const locationIdRaw = formData.get("locationId");
+  try {
+    if (!batchId) {
+      throw new Error("ID do batch não fornecido");
+    }
 
-  if (!name || !quantityRaw || !expiryDateRaw) {
-    return;
+    const name = String(formData.get("name") ?? "").trim();
+    const quantityRaw = formData.get("quantity");
+    const unitRaw = String(formData.get("unit") ?? "").trim();
+    const expiryDateRaw = formData.get("expiryDate");
+    const categoryIdRaw = formData.get("categoryId");
+    const locationIdRaw = formData.get("locationId");
+
+    if (!name || !quantityRaw || !expiryDateRaw) {
+      throw new Error("Campos obrigatórios em falta");
+    }
+
+    const quantity = Number(quantityRaw);
+    const unit = unitRaw || "un";
+    const expiryDateString = String(expiryDateRaw);
+    const expiryDate = new Date(expiryDateString);
+
+    if (isNaN(expiryDate.getTime())) {
+      throw new Error("Data de validade inválida");
+    }
+
+    // Converter categoryId e locationId: se vazio ou "undefined", usar null
+    const categoryId =
+      categoryIdRaw && String(categoryIdRaw).trim() !== ""
+        ? String(categoryIdRaw)
+        : null;
+    const locationId =
+      locationIdRaw && String(locationIdRaw).trim() !== ""
+        ? String(locationIdRaw)
+        : null;
+
+    await db.productBatch.update({
+      where: { id: batchId },
+      data: {
+        name,
+        quantity: isNaN(quantity) || quantity <= 0 ? 1 : quantity,
+        unit,
+        expiryDate,
+        categoryId,
+        locationId,
+      },
+    });
+
+    revalidatePath("/stock");
+  } catch (error) {
+    console.error("Error updating product batch:", error);
+    throw error; // Re-throw para o client conseguir capturar
   }
-
-  const quantity = Number(quantityRaw);
-  const unit = unitRaw || "un";
-  const expiryDate = new Date(String(expiryDateRaw));
-
-  await db.productBatch.update({
-    where: { id: batchId },
-    data: {
-      name,
-      quantity: isNaN(quantity) ? 1 : quantity,
-      unit,
-      expiryDate,
-      categoryId: categoryIdRaw ? String(categoryIdRaw) : null,
-      locationId: locationIdRaw ? String(locationIdRaw) : null,
-    },
-  });
-
-  revalidatePath("/stock");
 }
 
 export async function deleteProductBatch(batchId: string) {
