@@ -228,16 +228,18 @@ export function StockViewSimple({
         </div>
       )}
 
-      {/* Dialog de edição */}
-      {editingBatch && (
+      {/* Dialog de edição - apenas renderiza se estiver aberto e tiver batch válido */}
+      {editDialogOpen && editingBatch && editingBatch.id && categories && locations && (
         <EditBatchDialog
           batch={editingBatch}
           categories={categories}
           locations={locations}
           open={editDialogOpen}
-          onOpenChange={(open) => {
+          onOpenChange={(open: boolean) => {
             setEditDialogOpen(open);
-            if (!open) setEditingBatch(null);
+            if (!open) {
+              setEditingBatch(null);
+            }
           }}
         />
       )}

@@ -36,6 +36,22 @@ export function EditBatchDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Validação defensiva inicial
+  if (!batch || !batch.id) {
+    console.warn("EditBatchDialog: batch inválido");
+    return null;
+  }
+
+  if (!categories || !Array.isArray(categories)) {
+    console.warn("EditBatchDialog: categories inválidas");
+    return null;
+  }
+
+  if (!locations || !Array.isArray(locations)) {
+    console.warn("EditBatchDialog: locations inválidas");
+    return null;
+  }
+
   async function handleSubmit(formData: FormData) {
     try {
       setIsSubmitting(true);
@@ -81,8 +97,8 @@ export function EditBatchDialog({
     expiryDateString = new Date().toISOString().split("T")[0];
   }
 
-  // Se batch não está disponível, não renderizar
-  if (!batch) {
+  // Se batch não está disponível ou dialog está fechado, não renderizar nada
+  if (!open || !batch || !batch.id) {
     return null;
   }
 
