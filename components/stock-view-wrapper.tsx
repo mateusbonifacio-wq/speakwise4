@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { StockView } from "./stock-view";
+import { StockViewSimple } from "./stock-view-simple";
 import type { BatchWithRelations } from "@/lib/stock-utils";
-import type { Category, Location, Restaurant } from "@prisma/client";
+import type { Restaurant } from "@prisma/client";
 
 interface StockViewWrapperProps {
   batches: any[];
@@ -14,7 +14,7 @@ interface StockViewWrapperProps {
 
 /**
  * Wrapper que garante conversão segura de dados serializados do server
- * e adiciona error boundary client-side.
+ * Versão simplificada para debug
  */
 export function StockViewWrapper({
   batches,
@@ -25,67 +25,83 @@ export function StockViewWrapper({
   const [convertedData, setConvertedData] = useState<{
     batches: BatchWithRelations[];
     restaurant: Restaurant;
-    categories: Category[];
-    locations: Location[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
+      if (!batches || !Array.isArray(batches)) {
+        throw new Error("Batches não é um array válido");
+      }
+
+      if (!restaurant) {
+        throw new Error("Restaurant não está definido");
+      }
+
       // Converter strings de data para Date objects
-      const convertedBatches: BatchWithRelations[] = batches.map((batch) => ({
-        ...batch,
-        expiryDate:
-          typeof batch.expiryDate === "string"
-            ? new Date(batch.expiryDate)
-            : batch.expiryDate,
-        createdAt:
-          typeof batch.createdAt === "string"
-            ? new Date(batch.createdAt)
-            : batch.createdAt,
-        updatedAt:
-          typeof batch.updatedAt === "string"
-            ? new Date(batch.updatedAt)
-            : batch.updatedAt,
-        category: batch.category
-          ? {
-              ...batch.category,
-              createdAt:
-                typeof batch.category.createdAt === "string"
-                  ? new Date(batch.category.createdAt)
-                  : batch.category.createdAt,
-              updatedAt:
-                typeof batch.category.updatedAt === "string"
-                  ? new Date(batch.category.updatedAt)
-                  : batch.category.updatedAt,
-            }
-          : null,
-        location: batch.location
-          ? {
-              ...batch.location,
-              createdAt:
-                typeof batch.location.createdAt === "string"
-                  ? new Date(batch.location.createdAt)
-                  : batch.location.createdAt,
-              updatedAt:
-                typeof batch.location.updatedAt === "string"
-                  ? new Date(batch.location.updatedAt)
-                  : batch.location.updatedAt,
-            }
-          : null,
-      }));
+      const convertedBatches: BatchWithRelations[] = batches.map((batch: any) => {
+        if (!batch || !batch.id) {
+          console.warn("Batch inválido encontrado:", batch);
+          return null;
+        }
+        return {
+          ...batch,
+          expiryDate:
+            typeof batch.expiryDate === "string"
+              ? new Date(batch.expiryDate)
+              : batch.expiryDate instanceof Date
+              ? batch.expiryDate
+              : new Date(),
+          createdAt:
+            typeof batch.createdAt === "string"
+              ? new Date(batch.createdAt)
+              : batch.createdAt instanceof Date
+              ? batch.createdAt
+              : new Date(),
+          updatedAt:
+            typeof batch.updatedAt === "string"
+              ? new Date(batch.updatedAt)
+              : batch.updatedAt instanceof Date
+              ? batch.updatedAt
+              : new Date(),
+          category: batch.category
+            ? {
+                ...batch.category,
+                createdAt:
+                  typeof batch.category.createdAt === "string"
+                    ? new Date(batch.category.createdAt)
+                    : batch.category.createdAt,
+                updatedAt:
+                  typeof batch.category.updatedAt === "string"
+                    ? new Date(batch.category.updatedAt)
+                    : batch.category.updatedAt,
+              }
+            : null,
+          location: batch.location
+            ? {
+                ...batch.location,
+                createdAt:
+                  typeof batch.location.createdAt === "string"
+                    ? new Date(batch.location.createdAt)
+                    : batch.location.createdAt,
+                updatedAt:
+                  typeof batch.location.updatedAt === "string"
+                    ? new Date(batch.location.updatedAt)
+                    : batch.location.updatedAt,
+              }
+            : null,
+        };
+      }).filter((b): b is BatchWithRelations => b !== null);
 
       setConvertedData({
         batches: convertedBatches,
         restaurant,
-        categories,
-        locations,
       });
     } catch (err) {
       console.error("Error converting stock data:", err);
       setError(err instanceof Error ? err.message : "Erro desconhecido");
     }
-  }, [batches, restaurant, categories, locations]);
+  }, [batches, restaurant]);
 
   if (error) {
     return (
@@ -95,6 +111,14 @@ export function StockViewWrapper({
             Erro ao carregar stock
           </p>
           <p className="text-sm text-muted-foreground">{error}</p>
+          <details className="mt-4 text-left">
+            <summary className="cursor-pointer text-sm font-medium">
+              Detalhes técnicos
+            </summary>
+            <pre className="mt-2 text-xs overflow-auto p-2 bg-muted rounded">
+              {JSON.stringify({ batches: batches?.length, restaurant: !!restaurant }, null, 2)}
+            </pre>
+          </details>
         </div>
       </div>
     );
@@ -110,6 +134,6 @@ export function StockViewWrapper({
     );
   }
 
-  return <StockView {...convertedData} />;
+  return <StockViewSimple {...convertedData} />;
 }
 
