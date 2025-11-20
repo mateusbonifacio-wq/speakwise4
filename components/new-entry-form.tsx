@@ -32,7 +32,6 @@ export default function NewEntryForm({
         </CardHeader>
         <CardContent>
           <form action={createProductBatch} className="space-y-4">
-            <input type="hidden" name="restaurantId" value={restaurantId} />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">

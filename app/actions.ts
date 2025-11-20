@@ -133,44 +133,54 @@ export async function deleteLocation(locationId: string) {
   revalidatePath("/settings");
 }
 
- export async function createProductBatch(formData: FormData) {
-  const tenantId = await getRestaurantIdFromCookie();
-  if (!tenantId) throw new Error("Não autenticado");
+export async function createProductBatch(formData: FormData) {
+  try {
+    const tenantId = await getRestaurantIdFromCookie();
+    if (!tenantId) throw new Error("Não autenticado");
 
-  const restaurant = await getRestaurantByTenantId(tenantId);
-  const user = await getUser(restaurant.id);
+    const restaurant = await getRestaurantByTenantId(tenantId);
+    const user = await getUser(restaurant.id);
 
-   const name = String(formData.get("name") ?? "").trim();
-   const quantityRaw = formData.get("quantity");
-   const unitRaw = String(formData.get("unit") ?? "").trim();
-   const expiryDateRaw = formData.get("expiryDate");
-   const categoryIdRaw = formData.get("categoryId");
-   const locationIdRaw = formData.get("locationId");
+    const name = String(formData.get("name") ?? "").trim();
+    const quantityRaw = formData.get("quantity");
+    const unitRaw = String(formData.get("unit") ?? "").trim();
+    const expiryDateRaw = formData.get("expiryDate");
+    const categoryIdRaw = formData.get("categoryId");
+    const locationIdRaw = formData.get("locationId");
 
-   if (!name || !quantityRaw || !expiryDateRaw) {
-     return;
-   }
+    if (!name || !quantityRaw || !expiryDateRaw) {
+      throw new Error("Campos obrigatórios em falta");
+    }
 
-   const quantity = Number(quantityRaw);
-   const unit = unitRaw || "un";
-   const expiryDate = new Date(String(expiryDateRaw));
+    const quantity = Number(quantityRaw);
+    const unit = unitRaw || "un";
+    const expiryDate = new Date(String(expiryDateRaw));
 
-   await db.productBatch.create({
-     data: {
-       name,
-       quantity: isNaN(quantity) ? 1 : quantity,
-       unit,
-       expiryDate,
-       restaurantId: restaurant.id,
-       userId: user.id,
-       categoryId: categoryIdRaw ? String(categoryIdRaw) : null,
-       locationId: locationIdRaw ? String(locationIdRaw) : null,
-     },
-   });
+    if (isNaN(expiryDate.getTime())) {
+      throw new Error("Data de validade inválida");
+    }
 
-  revalidatePath("/nova-entrada");
-  revalidatePath("/entries/new");
-  revalidatePath("/stock");
+    await db.productBatch.create({
+      data: {
+        name,
+        quantity: isNaN(quantity) || quantity <= 0 ? 1 : quantity,
+        unit,
+        expiryDate,
+        restaurantId: restaurant.id,
+        userId: user.id,
+        categoryId: categoryIdRaw && String(categoryIdRaw).trim() !== "" ? String(categoryIdRaw) : null,
+        locationId: locationIdRaw && String(locationIdRaw).trim() !== "" ? String(locationIdRaw) : null,
+      },
+    });
+
+    revalidatePath("/nova-entrada");
+    revalidatePath("/entries/new");
+    revalidatePath("/stock");
+    revalidatePath("/hoje");
+  } catch (error) {
+    console.error("Error creating product batch:", error);
+    throw error; // Re-throw para o client conseguir capturar
+  }
 }
 
 export async function updateProductBatch(batchId: string, formData: FormData) {
