@@ -18,10 +18,10 @@ export function MainNav() {
 
   const routes = [
     {
-      href: "/",
+      href: "/dashboard",
       label: "Hoje",
       icon: LayoutDashboard,
-      active: pathname === "/",
+      active: pathname === "/dashboard",
     },
     {
       href: "/entries/new",
