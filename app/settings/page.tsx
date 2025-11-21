@@ -1,200 +1,53 @@
-import { getRestaurant } from "@/lib/data-access"
-import { PageHeader } from "@/components/page-header"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { updateSettings, createCategory, createLocation, deleteCategory, deleteLocation, updateCategoryAlert } from "@/app/actions"
-import { Trash2 } from "lucide-react"
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { getRestaurantByTenantId } from "@/lib/data-access";
+import SettingsContent from "@/components/settings-content";
+import { AuthGuard } from "@/components/auth-guard";
 
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic";
 
+/**
+ * Protected route: /settings (alias for /definicoes)
+ * Redirects to /acesso if not authenticated
+ */
 export default async function SettingsPage() {
+  // Check authentication via cookie
+  const cookieStore = await cookies();
+  const restaurantId = cookieStore.get("clearskok_restaurantId")?.value;
+
+  if (!restaurantId || !["A", "B", "C", "D"].includes(restaurantId)) {
+    redirect("/acesso");
+  }
+
   try {
-    const restaurant = await getRestaurant()
+    const restaurant = await getRestaurantByTenantId(restaurantId as "A" | "B" | "C" | "D");
 
     return (
-    <div className="space-y-6">
-      <PageHeader 
-        title="Definições" 
-        description="Gerir configurações do restaurante"
-      />
-
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="categories">Categorias</TabsTrigger>
-          <TabsTrigger value="locations">Localizações</TabsTrigger>
-        </TabsList>
-        
-        {/* Tab: Geral */}
-        <TabsContent value="general">
-          <Card>
-            <CardHeader>
-              <CardTitle>Alertas</CardTitle>
-              <CardDescription>
-                Configurar quando os produtos devem começar a aparecer como "A expirar".
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form action={updateSettings} className="flex items-end gap-4">
-                <div className="space-y-2 flex-1 max-w-sm">
-                  <label className="text-sm font-medium">Dias antes de expirar (padrão)</label>
-                  <Input 
-                    name="alertDays" 
-                    type="number" 
-                    min="1" 
-                    defaultValue={restaurant.alertDaysBeforeExpiry} 
-                    required 
-                  />
-                </div>
-                <Button type="submit">Guardar</Button>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab: Categorias */}
-        <TabsContent value="categories">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Nova Categoria</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form action={createCategory} className="flex gap-4">
-                  <Input name="name" placeholder="Nome da categoria (ex: Congelados)" required />
-                  <Button type="submit">Adicionar</Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Categorias Existentes</CardTitle>
-                <CardDescription>
-                  Pode definir dois níveis de aviso por categoria. Se deixar vazio, usa o padrão geral.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {restaurant.categories.map((cat) => (
-                    <li key={cat.id} className="flex items-center justify-between gap-4 p-2 bg-muted rounded-md">
-                      <div className="flex-1">
-                        <div className="font-medium">{cat.name}</div>
-                        <div className="text-xs text-muted-foreground space-y-0.5">
-                          <div>
-                            Aviso 1 (em breve):{" "}
-                            {cat.warningDaysBeforeExpiry ?? cat.alertDaysBeforeExpiry ?? restaurant.alertDaysBeforeExpiry}{" "}
-                            dias antes
-                            {cat.warningDaysBeforeExpiry == null && " (padrão)"}
-                          </div>
-                          <div>
-                            Aviso 2 (urgente):{" "}
-                            {cat.alertDaysBeforeExpiry ?? restaurant.alertDaysBeforeExpiry} dias antes
-                            {cat.alertDaysBeforeExpiry == null && " (padrão)"}
-                          </div>
-                        </div>
-                      </div>
-                      <form
-                        action={updateCategoryAlert.bind(null, cat.id)}
-                        className="flex items-end gap-2"
-                      >
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium">Aviso 1 (dias)</label>
-                          <Input
-                            name="warningAlertDays"
-                            type="number"
-                            min="1"
-                            defaultValue={cat.warningDaysBeforeExpiry ?? ""}
-                            className="w-20"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium">Aviso 2 (dias)</label>
-                          <Input
-                            name="urgentAlertDays"
-                            type="number"
-                            min="1"
-                            defaultValue={cat.alertDaysBeforeExpiry ?? ""}
-                            className="w-20"
-                          />
-                        </div>
-                        <Button type="submit" variant="outline" size="sm">
-                          Guardar
-                        </Button>
-                      </form>
-                      <form action={deleteCategory.bind(null, cat.id)}>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </form>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Tab: Localizações */}
-        <TabsContent value="locations">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Nova Localização</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form action={createLocation} className="flex gap-4">
-                  <Input name="name" placeholder="Nome da localização (ex: Arca Frigorífica)" required />
-                  <Button type="submit">Adicionar</Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Localizações Existentes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {restaurant.locations.map((loc) => (
-                    <li key={loc.id} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                      <span>{loc.name}</span>
-                      <form action={deleteLocation.bind(null, loc.id)}>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </form>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+      <AuthGuard>
+        <SettingsContent restaurant={restaurant} />
+      </AuthGuard>
+    );
   } catch (error) {
     console.error("Error loading settings page:", error);
     return (
-      <div className="space-y-6">
-        <PageHeader 
-          title="Definições" 
-          description="Gerir configurações do restaurante"
-        />
-        <Card>
-          <CardContent className="py-12 text-center text-destructive">
+      <AuthGuard>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Definições</h1>
+            <p className="text-muted-foreground">
+              Gerir configurações do restaurante
+            </p>
+          </div>
+          <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-12 text-center text-destructive">
             <p className="text-lg font-medium mb-2">
               Erro ao carregar definições
             </p>
             <p className="text-sm text-muted-foreground">
               Por favor, recarregue a página ou contacte o suporte.
             </p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </AuthGuard>
     );
   }
 }

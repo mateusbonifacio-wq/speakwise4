@@ -41,72 +41,162 @@ export async function updateSettings(formData: FormData) {
 }
 
 export async function createCategory(formData: FormData) {
-  const tenantId = await getRestaurantIdFromCookie();
-  if (!tenantId) throw new Error("Não autenticado");
+  try {
+    const tenantId = await getRestaurantIdFromCookie();
+    if (!tenantId) {
+      return {
+        success: false,
+        error: "Não autenticado. Por favor, faça login novamente.",
+      };
+    }
 
-  const restaurant = await getRestaurantByTenantId(tenantId);
-  const name = String(formData.get("name") ?? "").trim();
+    const restaurant = await getRestaurantByTenantId(tenantId);
+    const name = String(formData.get("name") ?? "").trim();
 
-  if (!name) return;
+    if (!name) {
+      return {
+        success: false,
+        error: "Por favor, forneça um nome para a categoria.",
+      };
+    }
 
-  await db.category.create({
-    data: {
-      name,
-      restaurantId: restaurant.id,
-    },
-  });
+    // Check if category already exists for this restaurant
+    const existingCategory = await db.category.findFirst({
+      where: {
+        restaurantId: restaurant.id,
+        name: name,
+      },
+    });
 
-  revalidatePath("/definicoes");
-  revalidatePath("/settings");
+    if (existingCategory) {
+      return {
+        success: false,
+        error: `A categoria "${name}" já existe.`,
+      };
+    }
+
+    await db.category.create({
+      data: {
+        name,
+        restaurantId: restaurant.id,
+      },
+    });
+
+    revalidatePath("/definicoes");
+    revalidatePath("/settings");
+    revalidatePath("/nova-entrada");
+    revalidatePath("/entries/new");
+
+    return {
+      success: true,
+      message: `Categoria "${name}" criada com sucesso!`,
+    };
+  } catch (error) {
+    console.error("Error creating category:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao criar categoria.";
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
 }
 
 export async function createLocation(formData: FormData) {
-  const tenantId = await getRestaurantIdFromCookie();
-  if (!tenantId) throw new Error("Não autenticado");
+  try {
+    const tenantId = await getRestaurantIdFromCookie();
+    if (!tenantId) {
+      return {
+        success: false,
+        error: "Não autenticado. Por favor, faça login novamente.",
+      };
+    }
 
-  const restaurant = await getRestaurantByTenantId(tenantId);
-  const name = String(formData.get("name") ?? "").trim();
+    const restaurant = await getRestaurantByTenantId(tenantId);
+    const name = String(formData.get("name") ?? "").trim();
 
-  if (!name) return;
+    if (!name) {
+      return {
+        success: false,
+        error: "Por favor, forneça um nome para a localização.",
+      };
+    }
 
-  await db.location.create({
-    data: {
-      name,
-      restaurantId: restaurant.id,
-    },
-  });
+    // Check if location already exists for this restaurant
+    const existingLocation = await db.location.findFirst({
+      where: {
+        restaurantId: restaurant.id,
+        name: name,
+      },
+    });
 
-  revalidatePath("/definicoes");
-  revalidatePath("/settings");
+    if (existingLocation) {
+      return {
+        success: false,
+        error: `A localização "${name}" já existe.`,
+      };
+    }
+
+    await db.location.create({
+      data: {
+        name,
+        restaurantId: restaurant.id,
+      },
+    });
+
+    revalidatePath("/definicoes");
+    revalidatePath("/settings");
+    revalidatePath("/nova-entrada");
+    revalidatePath("/entries/new");
+
+    return {
+      success: true,
+      message: `Localização "${name}" criada com sucesso!`,
+    };
+  } catch (error) {
+    console.error("Error creating location:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao criar localização.";
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
 }
 
 export async function updateCategoryAlert(categoryId: string, formData: FormData) {
-  const tenantId = await getRestaurantIdFromCookie();
-  if (!tenantId) throw new Error("Não autenticado");
+  try {
+    const tenantId = await getRestaurantIdFromCookie();
+    if (!tenantId) throw new Error("Não autenticado");
 
-  const warningRaw = formData.get("warningDays");
-  const urgentRaw = formData.get("alertDays");
+    const warningRaw = formData.get("warningDays");
+    const urgentRaw = formData.get("alertDays");
 
-  const warning =
-    warningRaw && !isNaN(Number(warningRaw)) && Number(warningRaw) > 0
-      ? Number(warningRaw)
-      : null;
+    const warning =
+      warningRaw && !isNaN(Number(warningRaw)) && Number(warningRaw) >= 0
+        ? Number(warningRaw)
+        : null;
 
-  const urgent =
-    urgentRaw && !isNaN(Number(urgentRaw)) && Number(urgentRaw) > 0
-      ? Number(urgentRaw)
-      : null;
+    const urgent =
+      urgentRaw && !isNaN(Number(urgentRaw)) && Number(urgentRaw) >= 0
+        ? Number(urgentRaw)
+        : null;
 
-  await db.category.update({
-    where: { id: categoryId },
-    data: {
-      warningDaysBeforeExpiry: warning,
-      alertDaysBeforeExpiry: urgent,
-    },
-  });
+    await db.category.update({
+      where: { 
+        id: categoryId,
+        restaurant: { name: RESTAURANT_NAMES[tenantId] },
+      },
+      data: {
+        warningDaysBeforeExpiry: warning,
+        alertDaysBeforeExpiry: urgent,
+      },
+    });
 
-  revalidatePath("/definicoes");
-  revalidatePath("/settings");
+    revalidatePath("/definicoes");
+    revalidatePath("/settings");
+  } catch (error) {
+    console.error("Error updating category alert:", error);
+    throw error;
+  }
 }
 
 /**
@@ -145,27 +235,49 @@ export async function deleteLocationById(formData: FormData) {
 }
 
 export async function deleteCategory(categoryId: string) {
-  const tenantId = await getRestaurantIdFromCookie();
-  if (!tenantId) throw new Error("Não autenticado");
+  try {
+    const tenantId = await getRestaurantIdFromCookie();
+    if (!tenantId) throw new Error("Não autenticado");
 
-  await db.category.delete({
-    where: { id: categoryId },
-  });
+    await db.category.delete({
+      where: { 
+        id: categoryId,
+        restaurant: { name: RESTAURANT_NAMES[tenantId] },
+      },
+    });
 
-  revalidatePath("/definicoes");
-  revalidatePath("/settings");
+    revalidatePath("/definicoes");
+    revalidatePath("/settings");
+    revalidatePath("/nova-entrada");
+    revalidatePath("/entries/new");
+    revalidatePath("/stock");
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    throw error;
+  }
 }
 
 export async function deleteLocation(locationId: string) {
-  const tenantId = await getRestaurantIdFromCookie();
-  if (!tenantId) throw new Error("Não autenticado");
+  try {
+    const tenantId = await getRestaurantIdFromCookie();
+    if (!tenantId) throw new Error("Não autenticado");
 
-  await db.location.delete({
-    where: { id: locationId },
-  });
+    await db.location.delete({
+      where: { 
+        id: locationId,
+        restaurant: { name: RESTAURANT_NAMES[tenantId] },
+      },
+    });
 
-  revalidatePath("/definicoes");
-  revalidatePath("/settings");
+    revalidatePath("/definicoes");
+    revalidatePath("/settings");
+    revalidatePath("/nova-entrada");
+    revalidatePath("/entries/new");
+    revalidatePath("/stock");
+  } catch (error) {
+    console.error("Error deleting location:", error);
+    throw error;
+  }
 }
 
 /**

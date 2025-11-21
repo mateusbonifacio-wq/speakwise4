@@ -1,3 +1,7 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { updateSettings, createCategory, createLocation, updateCategoryAlertById, deleteCategoryById, deleteLocationById } from "@/app/actions";
 import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Restaurant, Category, Location } from "@prisma/client";
 
 interface SettingsContentProps {
@@ -19,6 +24,55 @@ interface SettingsContentProps {
  * Tabs adapt to mobile with better spacing and touch targets
  */
 export default function SettingsContent({ restaurant }: SettingsContentProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [categoryName, setCategoryName] = useState("");
+  const [locationName, setLocationName] = useState("");
+
+  const handleCreateCategory = async (formData: FormData) => {
+    startTransition(async () => {
+      try {
+        const result = await createCategory(formData);
+        if (result?.success) {
+          toast.success(result.message || "Categoria criada com sucesso!");
+          setCategoryName("");
+          router.refresh();
+        } else {
+          toast.error("Erro ao criar categoria", {
+            description: result?.error || "Ocorreu um erro ao criar a categoria.",
+          });
+        }
+      } catch (error) {
+        console.error("Unexpected error:", error);
+        toast.error("Erro inesperado", {
+          description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
+        });
+      }
+    });
+  };
+
+  const handleCreateLocation = async (formData: FormData) => {
+    startTransition(async () => {
+      try {
+        const result = await createLocation(formData);
+        if (result?.success) {
+          toast.success(result.message || "Localização criada com sucesso!");
+          setLocationName("");
+          router.refresh();
+        } else {
+          toast.error("Erro ao criar localização", {
+            description: result?.error || "Ocorreu um erro ao criar a localização.",
+          });
+        }
+      } catch (error) {
+        console.error("Unexpected error:", error);
+        toast.error("Erro inesperado", {
+          description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
+        });
+      }
+    });
+  };
+
   return (
     <div className="space-y-4 md:space-y-6">
       <PageHeader 
@@ -92,15 +146,23 @@ export default function SettingsContent({ restaurant }: SettingsContentProps) {
             </CardHeader>
             <CardContent className="px-4 pb-4 md:px-6 md:pb-6 space-y-4 md:space-y-5">
               {/* Stack form on mobile, row on desktop */}
-              <form action={createCategory} className="flex flex-col sm:flex-row gap-2 md:gap-3">
+              <form action={handleCreateCategory} className="flex flex-col sm:flex-row gap-2 md:gap-3">
                 <Input
                   name="name"
                   placeholder="Nome da categoria"
                   className="flex-1 h-11 md:h-10 text-base"
+                  value={categoryName}
+                  onChange={(e) => setCategoryName(e.target.value)}
                   required
+                  disabled={isPending}
                 />
-                <Button type="submit" className="w-full sm:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700" size="lg">
-                  Adicionar
+                <Button 
+                  type="submit" 
+                  className="w-full sm:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700" 
+                  size="lg"
+                  disabled={isPending}
+                >
+                  {isPending ? "A guardar..." : "Adicionar"}
                 </Button>
               </form>
 
@@ -182,15 +244,23 @@ export default function SettingsContent({ restaurant }: SettingsContentProps) {
             </CardHeader>
             <CardContent className="px-4 pb-4 md:px-6 md:pb-6 space-y-4 md:space-y-5">
               {/* Stack form on mobile, row on desktop */}
-              <form action={createLocation} className="flex flex-col sm:flex-row gap-2 md:gap-3">
+              <form action={handleCreateLocation} className="flex flex-col sm:flex-row gap-2 md:gap-3">
                 <Input
                   name="name"
                   placeholder="Nome da localização"
                   className="flex-1 h-11 md:h-10 text-base"
+                  value={locationName}
+                  onChange={(e) => setLocationName(e.target.value)}
                   required
+                  disabled={isPending}
                 />
-                <Button type="submit" className="w-full sm:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700" size="lg">
-                  Adicionar
+                <Button 
+                  type="submit" 
+                  className="w-full sm:w-auto bg-indigo-600 text-white rounded-lg py-3 px-4 shadow-md hover:bg-indigo-700" 
+                  size="lg"
+                  disabled={isPending}
+                >
+                  {isPending ? "A guardar..." : "Adicionar"}
                 </Button>
               </form>
 
