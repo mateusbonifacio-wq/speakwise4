@@ -69,7 +69,10 @@ export function EditBatchDialog({
       await updateProductBatch(batch.id, formData);
       setIsSubmitting(false);
       onOpenChange(false);
-      router.refresh();
+      // Only refresh if dialog is still open (user might have closed it)
+      if (open) {
+        router.refresh();
+      }
     } catch (err) {
       console.error("Error updating batch:", err);
       setIsSubmitting(false);

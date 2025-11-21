@@ -36,6 +36,7 @@ export default function SettingsContent({ restaurant }: SettingsContentProps) {
         if (result?.success) {
           toast.success(result.message || "Categoria criada com sucesso!");
           setCategoryName("");
+          // Refresh to show new category in list
           router.refresh();
         } else {
           toast.error("Erro ao criar categoria", {
@@ -58,6 +59,7 @@ export default function SettingsContent({ restaurant }: SettingsContentProps) {
         if (result?.success) {
           toast.success(result.message || "Localização criada com sucesso!");
           setLocationName("");
+          // Refresh to show new location in list
           router.refresh();
         } else {
           toast.error("Erro ao criar localização", {

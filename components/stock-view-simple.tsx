@@ -120,7 +120,7 @@ export function StockViewSimple({
     }
   };
 
-  // Handle quantity adjustment
+  // Handle quantity adjustment - refresh after success for accuracy
   const handleAdjustQuantity = async (batchId: string, adjustment: number) => {
     setAdjustingBatchId(batchId);
     startTransition(async () => {
@@ -128,6 +128,7 @@ export function StockViewSimple({
         const result = await adjustBatchQuantity(batchId, adjustment);
         if (result.success) {
           toast.success(result.message || "Quantidade ajustada com sucesso!");
+          // Refresh to get updated data from server
           router.refresh();
         } else {
           toast.error("Erro ao ajustar quantidade", {

@@ -36,8 +36,8 @@ export async function updateSettings(formData: FormData) {
     },
   });
 
-  revalidatePath("/definicoes");
-  revalidatePath("/settings");
+  revalidatePath("/definicoes", "page");
+  revalidatePath("/settings", "page");
 }
 
 export async function createCategory(formData: FormData) {
@@ -82,10 +82,9 @@ export async function createCategory(formData: FormData) {
       },
     });
 
-    revalidatePath("/definicoes");
-    revalidatePath("/settings");
-    revalidatePath("/nova-entrada");
-    revalidatePath("/entries/new");
+    // Only revalidate settings page - categories/locations appear in forms via server components
+    revalidatePath("/definicoes", "page");
+    revalidatePath("/settings", "page");
 
     return {
       success: true,
@@ -143,10 +142,9 @@ export async function createLocation(formData: FormData) {
       },
     });
 
-    revalidatePath("/definicoes");
-    revalidatePath("/settings");
-    revalidatePath("/nova-entrada");
-    revalidatePath("/entries/new");
+    // Only revalidate settings page - locations appear in forms via server components
+    revalidatePath("/definicoes", "page");
+    revalidatePath("/settings", "page");
 
     return {
       success: true,
@@ -191,8 +189,8 @@ export async function updateCategoryAlert(categoryId: string, formData: FormData
       },
     });
 
-    revalidatePath("/definicoes");
-    revalidatePath("/settings");
+    revalidatePath("/definicoes", "page");
+    revalidatePath("/settings", "page");
   } catch (error) {
     console.error("Error updating category alert:", error);
     throw error;
@@ -246,11 +244,9 @@ export async function deleteCategory(categoryId: string) {
       },
     });
 
-    revalidatePath("/definicoes");
-    revalidatePath("/settings");
-    revalidatePath("/nova-entrada");
-    revalidatePath("/entries/new");
-    revalidatePath("/stock");
+    revalidatePath("/definicoes", "page");
+    revalidatePath("/settings", "page");
+    revalidatePath("/stock", "page");
   } catch (error) {
     console.error("Error deleting category:", error);
     throw error;
@@ -269,11 +265,9 @@ export async function deleteLocation(locationId: string) {
       },
     });
 
-    revalidatePath("/definicoes");
-    revalidatePath("/settings");
-    revalidatePath("/nova-entrada");
-    revalidatePath("/entries/new");
-    revalidatePath("/stock");
+    revalidatePath("/definicoes", "page");
+    revalidatePath("/settings", "page");
+    revalidatePath("/stock", "page");
   } catch (error) {
     console.error("Error deleting location:", error);
     throw error;
@@ -347,10 +341,9 @@ export async function createProductBatch(formData: FormData) {
       },
     });
 
-    revalidatePath("/nova-entrada");
-    revalidatePath("/entries/new");
-    revalidatePath("/stock");
-    revalidatePath("/hoje");
+    // Only revalidate paths that actually need to be updated
+    revalidatePath("/stock", "page");
+    revalidatePath("/hoje", "page");
 
     return {
       success: true,
@@ -429,7 +422,7 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
       },
     });
 
-    revalidatePath("/stock");
+    revalidatePath("/stock", "page");
   } catch (error) {
     console.error("Error updating product batch:", error);
     throw error; // Re-throw para o client conseguir capturar
@@ -490,9 +483,9 @@ export async function adjustBatchQuantity(batchId: string, adjustment: number) {
       },
     });
 
-    revalidatePath("/stock");
-    revalidatePath("/hoje");
-    revalidatePath("/dashboard");
+    // Revalidate pages that show stock data (dashboard is same as hoje)
+    revalidatePath("/stock", "page");
+    revalidatePath("/hoje", "page");
 
     return {
       success: true,

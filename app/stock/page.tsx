@@ -27,14 +27,45 @@ export default async function StockPage() {
   try {
     const restaurant = await getRestaurantByTenantId(restaurantId as "A" | "B" | "C" | "D");
 
+    // Optimize query: select only needed fields to reduce payload size
     const batches = await db.productBatch.findMany({
       where: {
         restaurantId: restaurant.id,
         // Fetch all batches; client component will filter by quantity
       },
-      include: {
-        category: true,
-        location: true,
+      select: {
+        id: true,
+        name: true,
+        quantity: true,
+        unit: true,
+        expiryDate: true,
+        packagingType: true,
+        size: true,
+        sizeUnit: true,
+        status: true,
+        restaurantId: true,
+        createdAt: true,
+        updatedAt: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            alertDaysBeforeExpiry: true,
+            warningDaysBeforeExpiry: true,
+            restaurantId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        location: {
+          select: {
+            id: true,
+            name: true,
+            restaurantId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
       orderBy: {
         expiryDate: "asc",
@@ -50,10 +81,10 @@ export default async function StockPage() {
         />
 
         <StockViewWrapper
-          batches={JSON.parse(JSON.stringify(batches))}
-          restaurant={JSON.parse(JSON.stringify(restaurant))}
-          categories={JSON.parse(JSON.stringify(restaurant.categories))}
-          locations={JSON.parse(JSON.stringify(restaurant.locations))}
+          batches={batches}
+          restaurant={restaurant}
+          categories={restaurant.categories}
+          locations={restaurant.locations}
         />
       </div>
     </AuthGuard>
