@@ -28,10 +28,13 @@ export function VoiceCommandButton({
   const [state, setState] = useState<RecordingState>("idle");
   const [transcript, setTranscript] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [recordingTime, setRecordingTime] = useState<number>(0);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const maxRecordingTime = 20; // 20 seconds for kitchen environment
 
   // Cleanup on unmount
   useEffect(() => {
@@ -44,10 +47,20 @@ export function VoiceCommandButton({
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
+      // Clear timer
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
     };
   }, []);
 
   const stopRecording = () => {
+    // Clear timer
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
     }
@@ -55,6 +68,7 @@ export function VoiceCommandButton({
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    setRecordingTime(0);
   };
 
   const startRecording = async () => {
@@ -106,15 +120,31 @@ export function VoiceCommandButton({
           setState("processing");
 
           // Create audio blob
+          const mimeType = mediaRecorder.mimeType || "audio/webm";
           const audioBlob = new Blob(audioChunksRef.current, { 
-            type: mediaRecorder.mimeType || "audio/webm" 
+            type: mimeType
           });
+
+          // Determine file extension based on MIME type
+          let fileExtension = "webm";
+          if (mimeType.includes("mp4") || mimeType.includes("m4a")) {
+            fileExtension = "m4a";
+          } else if (mimeType.includes("ogg")) {
+            fileExtension = "ogg";
+          } else if (mimeType.includes("wav")) {
+            fileExtension = "wav";
+          }
 
           // Send to backend API
           const formData = new FormData();
-          formData.append("audio", audioBlob, "recording.webm");
+          formData.append("audio", audioBlob, `recording.${fileExtension}`);
 
-          console.log("Sending audio to API, size:", audioBlob.size, "type:", audioBlob.type);
+          console.log("Sending audio to API:", {
+            size: audioBlob.size,
+            type: mimeType,
+            extension: fileExtension,
+            duration: recordingTime,
+          });
 
           const response = await fetch("/api/speech-to-text", {
             method: "POST",
@@ -174,13 +204,29 @@ export function VoiceCommandButton({
       // Start recording
       mediaRecorder.start();
       setState("recording");
+      setRecordingTime(0);
 
-      // Auto-stop after 5 seconds
+      // Start timer to show recording time
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime((prev) => {
+          const newTime = prev + 1;
+          // Auto-stop after max time
+          if (newTime >= maxRecordingTime) {
+            if (mediaRecorder.state === "recording") {
+              stopRecording();
+            }
+            return maxRecordingTime;
+          }
+          return newTime;
+        });
+      }, 1000);
+
+      // Auto-stop after max time (backup)
       setTimeout(() => {
         if (mediaRecorder.state === "recording") {
           stopRecording();
         }
-      }, 5000);
+      }, maxRecordingTime * 1000);
 
     } catch (err) {
       console.error("Error starting recording:", err);
@@ -292,10 +338,22 @@ export function VoiceCommandButton({
         </div>
       )}
 
-      {/* Recording indicator text (optional, for better UX) */}
+      {/* Recording indicator with timer */}
       {state === "recording" && (
-        <div className="fixed bottom-32 right-4 md:bottom-28 md:right-6 bg-red-600 text-white rounded-lg px-3 py-2 shadow-lg z-[9998] animate-in slide-in-from-bottom-2">
-          <p className="text-sm font-medium">A gravar... (máx. 5s)</p>
+        <div className="fixed bottom-32 right-4 md:bottom-28 md:right-6 bg-red-600 text-white rounded-lg px-4 py-3 shadow-lg z-[9998] animate-in slide-in-from-bottom-2">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Mic className="h-5 w-5 animate-pulse" />
+              <span className="absolute -top-1 -right-1 h-2 w-2 bg-white rounded-full animate-ping" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">A gravar...</p>
+              <p className="text-xs opacity-90">
+                {recordingTime}s / {maxRecordingTime}s
+              </p>
+            </div>
+          </div>
+          <p className="text-xs mt-2 opacity-75">Clique novamente para parar</p>
         </div>
       )}
     </div>

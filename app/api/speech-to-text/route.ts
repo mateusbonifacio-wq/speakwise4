@@ -50,22 +50,27 @@ export async function POST(request: NextRequest) {
     // Prepare FormData for ElevenLabs API
     const elevenLabsFormData = new FormData();
     
-    // Create a File object for ElevenLabs (they may require specific format)
-    const fileBlob = new Blob([audioBlob], { type: audioFile.type || "audio/webm" });
-    elevenLabsFormData.append("file", fileBlob, audioFile.name || "audio.webm");
+    // Create a File object for ElevenLabs
+    // Use the original audio type, or default to webm
+    const audioType = audioFile.type || "audio/webm";
+    const fileBlob = new Blob([audioBlob], { type: audioType });
+    const fileName = audioFile.name || `audio.${audioType.includes("webm") ? "webm" : "mp4"}`;
+    
+    elevenLabsFormData.append("file", fileBlob, fileName);
 
-    // ElevenLabs STT API may accept language as form field or query param
-    // Try both approaches - form field first
-    elevenLabsFormData.append("language_code", "pt-PT");
+    // ElevenLabs STT API parameters
+    // Language code for Portuguese (Portugal)
+    elevenLabsFormData.append("language_code", "pt");
 
-    console.log("Sending to ElevenLabs API...");
+    console.log("Sending to ElevenLabs API...", {
+      fileName,
+      audioType,
+      size: fileBlob.size,
+    });
 
     // Call ElevenLabs Speech-to-Text API
-    // Endpoint: https://api.elevenlabs.io/v1/speech-to-text
-    // Alternative endpoints to try if this fails:
-    // - https://api.elevenlabs.io/v1/speech-to-text/transcribe
-    // - https://api.elevenlabs.io/v1/speech-to-text/convert
-    const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+    // Try the main endpoint first
+    let response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
       method: "POST",
       headers: {
         "xi-api-key": apiKey,
@@ -73,6 +78,18 @@ export async function POST(request: NextRequest) {
       },
       body: elevenLabsFormData,
     });
+
+    // If 404, try alternative endpoint
+    if (response.status === 404) {
+      console.log("Trying alternative endpoint...");
+      response = await fetch("https://api.elevenlabs.io/v1/speech-to-text/transcribe", {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+        },
+        body: elevenLabsFormData,
+      });
+    }
 
     console.log("ElevenLabs API response status:", response.status, response.statusText);
 
