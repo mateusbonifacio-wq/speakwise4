@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { VoiceCommandButton } from "@/components/voice-command-button";
 
 import type { Category, Location } from "@prisma/client";
 
@@ -113,6 +114,19 @@ export default function NewEntryForm({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleVoiceTranscript = (text: string) => {
+    // For now, fill the product name field with the transcription
+    // Later, this can be expanded to parse commands like:
+    // "Adicionar 5 kg de leite com validade em 3 dias"
+    setFormData((prev) => ({
+      ...prev,
+      name: text.trim(),
+    }));
+    
+    // Log for debugging
+    console.log("Voice command received:", text);
   };
 
   return (
@@ -452,6 +466,9 @@ export default function NewEntryForm({
           </form>
         </CardContent>
       </Card>
+
+      {/* Voice Command Button - Floating action button */}
+      <VoiceCommandButton onTranscript={handleVoiceTranscript} />
     </div>
   );
 }
