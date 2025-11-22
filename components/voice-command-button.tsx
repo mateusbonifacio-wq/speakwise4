@@ -34,7 +34,12 @@ export function VoiceCommandButton({
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recognitionRef = useRef<any>(null); // Web Speech API
   const maxRecordingTime = 20; // 20 seconds for kitchen environment
+  
+  // Check if Web Speech API is available
+  const isWebSpeechAvailable = typeof window !== "undefined" && 
+    ("webkitSpeechRecognition" in window || "SpeechRecognition" in window);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -51,10 +56,25 @@ export function VoiceCommandButton({
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
+      // Stop Web Speech API
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore
+        }
+      }
     };
   }, []);
 
   const stopRecording = () => {
+    // Stop Web Speech API if active
+    if (recognitionRef.current) {
+      stopWebSpeechRecording();
+      return;
+    }
+    
+    // Stop MediaRecorder if active
     // Clear timer
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
@@ -71,21 +91,172 @@ export function VoiceCommandButton({
     setRecordingTime(0);
   };
 
+  const handleRecordingError = (err: unknown) => {
+    let errorMessage = "Erro ao aceder ao microfone";
+    
+    if (err instanceof Error) {
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        errorMessage = "Permissão de microfone negada. Por favor, permita o acesso ao microfone nas definições do navegador.";
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        errorMessage = "Nenhum microfone encontrado.";
+      } else {
+        errorMessage = err.message;
+      }
+    }
+
+    setError(errorMessage);
+    setState("error");
+    
+    toast.error("Erro de microfone", {
+      description: errorMessage,
+      duration: 5000,
+    });
+  };
+
   const startRecording = async () => {
     try {
       setError("");
       setTranscript("");
 
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        } 
-      });
+      // Try Web Speech API first (free, works directly in browser)
+      if (isWebSpeechAvailable) {
+        return startWebSpeechRecording();
+      }
 
-      streamRef.current = stream;
+      // Fallback to MediaRecorder + ElevenLabs API
+      return startMediaRecorderRecording();
+    } catch (err) {
+      console.error("Error starting recording:", err);
+      handleRecordingError(err);
+    }
+  };
+
+  const startWebSpeechRecording = () => {
+    try {
+      // Use Web Speech API (free, works directly in browser)
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = "pt-PT"; // Portuguese (Portugal)
+      
+      let finalTranscript = "";
+
+      recognition.onstart = () => {
+        setState("recording");
+        setRecordingTime(0);
+        
+        // Start timer
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingTime((prev) => {
+            const newTime = prev + 1;
+            if (newTime >= maxRecordingTime) {
+              recognition.stop();
+              return maxRecordingTime;
+            }
+            return newTime;
+          });
+        }, 1000);
+      };
+
+      recognition.onresult = (event: any) => {
+        let interimTranscript = "";
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + " ";
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        if (interimTranscript) {
+          setTranscript(interimTranscript);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+        let errorMessage = "Erro no reconhecimento de voz";
+        
+        if (event.error === "no-speech") {
+          errorMessage = "Nenhuma fala detectada. Tente novamente.";
+        } else if (event.error === "audio-capture") {
+          errorMessage = "Erro ao capturar áudio. Verifique o microfone.";
+        } else if (event.error === "not-allowed") {
+          errorMessage = "Permissão de microfone negada.";
+        }
+        
+        setError(errorMessage);
+        setState("error");
+        stopWebSpeechRecording();
+        
+        toast.error("Erro no reconhecimento", {
+          description: errorMessage,
+          duration: 5000,
+        });
+      };
+
+      recognition.onend = () => {
+        stopWebSpeechRecording();
+        
+        if (finalTranscript.trim()) {
+          const transcription = finalTranscript.trim();
+          setTranscript(transcription);
+          setState("idle");
+          
+          onTranscript(transcription);
+          
+          toast.success("Comando de voz reconhecido", {
+            description: transcription,
+            duration: 3000,
+          });
+        } else {
+          // No speech detected
+          setState("idle");
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+      
+    } catch (err) {
+      console.error("Error starting Web Speech API:", err);
+      // Fallback to MediaRecorder
+      return startMediaRecorderRecording();
+    }
+  };
+
+  const stopWebSpeechRecording = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    setRecordingTime(0);
+    
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore errors when stopping
+      }
+      recognitionRef.current = null;
+    }
+  };
+
+  const startMediaRecorderRecording = async () => {
+    // Request microphone access
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      } 
+    });
+
+    streamRef.current = stream;
 
       // Check if MediaRecorder is supported
       if (!MediaRecorder.isTypeSupported("audio/webm")) {
@@ -227,30 +398,6 @@ export function VoiceCommandButton({
           stopRecording();
         }
       }, maxRecordingTime * 1000);
-
-    } catch (err) {
-      console.error("Error starting recording:", err);
-      
-      let errorMessage = "Erro ao aceder ao microfone";
-      
-      if (err instanceof Error) {
-        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-          errorMessage = "Permissão de microfone negada. Por favor, permita o acesso ao microfone nas definições do navegador.";
-        } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-          errorMessage = "Nenhum microfone encontrado.";
-        } else {
-          errorMessage = err.message;
-        }
-      }
-
-      setError(errorMessage);
-      setState("error");
-      
-      toast.error("Erro de microfone", {
-        description: errorMessage,
-        duration: 5000,
-      });
-    }
   };
 
   const handleClick = () => {
