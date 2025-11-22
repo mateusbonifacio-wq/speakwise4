@@ -59,8 +59,10 @@ export async function POST(request: NextRequest) {
     elevenLabsFormData.append("file", fileBlob, fileName);
 
     // ElevenLabs STT API parameters
-    // Language code for Portuguese (Portugal)
+    // Try different parameter names - some APIs use different field names
     elevenLabsFormData.append("language_code", "pt");
+    // Also try model_id if needed
+    // elevenLabsFormData.append("model_id", "scribe_v1");
 
     console.log("Sending to ElevenLabs API...", {
       fileName,
@@ -69,26 +71,63 @@ export async function POST(request: NextRequest) {
     });
 
     // Call ElevenLabs Speech-to-Text API
-    // Try the main endpoint first
-    let response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-      method: "POST",
-      headers: {
-        "xi-api-key": apiKey,
-        // Don't set Content-Type - let browser set it with boundary for FormData
-      },
-      body: elevenLabsFormData,
-    });
+    // Try multiple endpoints - the correct one may vary
+    const endpoints = [
+      "https://api.elevenlabs.io/v1/speech-to-text",
+      "https://api.elevenlabs.io/v1/speech-to-text/transcribe",
+      "https://api.elevenlabs.io/v1/speech-to-text/convert",
+    ];
 
-    // If 404, try alternative endpoint
-    if (response.status === 404) {
-      console.log("Trying alternative endpoint...");
-      response = await fetch("https://api.elevenlabs.io/v1/speech-to-text/transcribe", {
-        method: "POST",
-        headers: {
-          "xi-api-key": apiKey,
+    let response: Response | null = null;
+    let lastError: string = "";
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Trying endpoint: ${endpoint}`);
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "xi-api-key": apiKey,
+            // Don't set Content-Type - let browser set it with boundary for FormData
+          },
+          body: elevenLabsFormData,
+        });
+
+        console.log(`Endpoint ${endpoint} response:`, response.status, response.statusText);
+
+        // If successful (2xx), use this response
+        if (response.ok) {
+          console.log(`Success with endpoint: ${endpoint}`);
+          break;
+        }
+
+        // If 404, try next endpoint
+        if (response.status === 404) {
+          console.log(`Endpoint ${endpoint} returned 404, trying next...`);
+          const errorText = await response.text().catch(() => "");
+          lastError = errorText;
+          response = null;
+          continue;
+        }
+
+        // For other errors, break and handle
+        break;
+      } catch (err) {
+        console.error(`Error with endpoint ${endpoint}:`, err);
+        lastError = err instanceof Error ? err.message : String(err);
+        response = null;
+        continue;
+      }
+    }
+
+    if (!response) {
+      return NextResponse.json(
+        {
+          error: "All endpoints failed",
+          details: lastError || "Could not connect to ElevenLabs API",
         },
-        body: elevenLabsFormData,
-      });
+        { status: 500 }
+      );
     }
 
     console.log("ElevenLabs API response status:", response.status, response.statusText);
