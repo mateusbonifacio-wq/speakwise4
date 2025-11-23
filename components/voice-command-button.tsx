@@ -146,7 +146,7 @@ export function VoiceCommandButton({
       // Improved settings for better accuracy
       recognition.continuous = true;
       recognition.interimResults = true; // Show interim results for better feedback
-      recognition.lang = "pt-PT"; // Portuguese (Portugal)
+      recognition.lang = "en-US"; // English (better accuracy, will translate to Portuguese)
       recognition.maxAlternatives = 1; // Get best match only
       
       let finalTranscript = "";
@@ -210,32 +210,67 @@ export function VoiceCommandButton({
         });
       };
 
-      recognition.onend = () => {
+      recognition.onend = async () => {
         stopWebSpeechRecording();
         
         const transcription = finalTranscript.trim();
         
         if (transcription) {
-          setTranscript(transcription);
-          setState("idle");
-          
-          onTranscript(transcription);
-          
-          toast.success("Comando de voz reconhecido", {
-            description: transcription,
-            duration: 3000,
-          });
+          // Translate from English to Portuguese
+          try {
+            setState("processing");
+            const translateResponse = await fetch("/api/translate", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ text: transcription }),
+            });
+
+            if (translateResponse.ok) {
+              const translateData = await translateResponse.json();
+              const translated = translateData.translated || transcription;
+              
+              setTranscript(translated);
+              setState("idle");
+              
+              onTranscript(translated);
+              
+              toast.success("Comando de voz reconhecido", {
+                description: translated,
+                duration: 3000,
+              });
+            } else {
+              // If translation fails, use original English text
+              console.warn("Translation failed, using original text");
+              setTranscript(transcription);
+              setState("idle");
+              onTranscript(transcription);
+              
+              toast.success("Comando de voz reconhecido (inglês)", {
+                description: transcription,
+                duration: 3000,
+              });
+            }
+          } catch (translateError) {
+            console.error("Translation error:", translateError);
+            // Use original English if translation fails
+            setTranscript(transcription);
+            setState("idle");
+            onTranscript(transcription);
+            
+            toast.success("Comando de voz reconhecido (inglês)", {
+              description: transcription,
+              duration: 3000,
+            });
+          }
         } else {
-          // No speech detected - try fallback to ElevenLabs if available
-          console.log("Web Speech API didn't detect speech, trying ElevenLabs fallback...");
+          // No speech detected
           setState("idle");
           
-          // Optionally fallback to MediaRecorder + ElevenLabs
-          // For now, just show error
           if (interimTranscript.trim()) {
-            // We had some interim results but no final
             toast.warning("Reconhecimento incompleto", {
-              description: "Tente falar mais claramente ou use o modo ElevenLabs.",
+              description: "Tente falar mais claramente.",
               duration: 4000,
             });
           } else {
@@ -368,17 +403,53 @@ export function VoiceCommandButton({
             throw new Error("No transcription received from API");
           }
 
-          setTranscript(transcription);
-          setState("idle");
-          
-          // Call callback
-          onTranscript(transcription);
+          // Translate from English to Portuguese
+          try {
+            const translateResponse = await fetch("/api/translate", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ text: transcription }),
+            });
 
-          // Show success toast
-          toast.success("Comando de voz reconhecido", {
-            description: transcription,
-            duration: 3000,
-          });
+            if (translateResponse.ok) {
+              const translateData = await translateResponse.json();
+              const translated = translateData.translated || transcription;
+              
+              setTranscript(translated);
+              setState("idle");
+              
+              onTranscript(translated);
+              
+              toast.success("Comando de voz reconhecido", {
+                description: translated,
+                duration: 3000,
+              });
+            } else {
+              // If translation fails, use original English
+              console.warn("Translation failed, using original text");
+              setTranscript(transcription);
+              setState("idle");
+              onTranscript(transcription);
+              
+              toast.success("Comando de voz reconhecido (inglês)", {
+                description: transcription,
+                duration: 3000,
+              });
+            }
+          } catch (translateError) {
+            console.error("Translation error:", translateError);
+            // Use original English if translation fails
+            setTranscript(transcription);
+            setState("idle");
+            onTranscript(transcription);
+            
+            toast.success("Comando de voz reconhecido (inglês)", {
+              description: transcription,
+              duration: 3000,
+            });
+          }
 
         } catch (err) {
           console.error("Error processing audio:", err);

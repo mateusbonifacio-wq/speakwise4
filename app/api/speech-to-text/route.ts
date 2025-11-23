@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // ElevenLabs STT API parameters
     // Try different parameter names - some APIs use different field names
-    elevenLabsFormData.append("language_code", "pt");
+    elevenLabsFormData.append("language_code", "en"); // English for better accuracy
     // Also try model_id if needed
     // elevenLabsFormData.append("model_id", "scribe_v1");
 
