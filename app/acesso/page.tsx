@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { validatePinAndLogin, getRestaurantNameByPin } from "@/app/actions";
-import { setAuth, PIN_TO_RESTAURANT, hasValidSession, normalizePIN, type RestaurantId } from "@/lib/auth";
+import { setAuth, PIN_TO_RESTAURANT, hasValidSession, normalizePIN, clearAuth, type RestaurantId } from "@/lib/auth";
 import { Lock } from "lucide-react";
 
 const MAX_ATTEMPTS = 5;
@@ -25,13 +25,37 @@ export default function AccessPage() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutTimeLeft, setLockoutTimeLeft] = useState(0);
+  const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
-  // Check for valid session on mount
+  // Check for valid session on mount (only once)
   useEffect(() => {
-    if (hasValidSession()) {
-      router.push("/hoje");
-    }
-  }, [router]);
+    // Only check once on mount, avoid loops
+    if (hasCheckedSession) return;
+    
+    const checkSession = () => {
+      try {
+        if (typeof window !== "undefined" && hasValidSession()) {
+          setHasCheckedSession(true);
+          // Use replace to avoid adding to history and prevent loops
+          router.replace("/hoje");
+        } else {
+          setHasCheckedSession(true);
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+        // If there's an error, clear session and stay on access page
+        if (typeof window !== "undefined") {
+          clearAuth();
+        }
+        setHasCheckedSession(true);
+      }
+    };
+    
+    // Small delay to ensure localStorage is ready and avoid hydration issues
+    const timeoutId = setTimeout(checkSession, 200);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Check if PIN has a restaurant name when PIN is 6 digits
   useEffect(() => {
