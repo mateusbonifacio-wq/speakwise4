@@ -15,7 +15,7 @@ export default function Home() {
           <ChefHat className="h-10 w-10 md:h-12 md:w-12 text-primary" />
         </div>
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
-          Clearstok
+          Clearstock
         </h1>
         <p className="max-w-[600px] text-base md:text-lg lg:text-xl text-muted-foreground px-4">
           Controla validades, evita desperdício, organiza o stock da tua cozinha.

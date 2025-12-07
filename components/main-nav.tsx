@@ -62,7 +62,7 @@ export function MainNav({ restaurantName }: MainNavProps) {
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <span className="font-bold">
-              Clearstok
+              Clearstock
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
@@ -99,7 +99,7 @@ export function MainNav({ restaurantName }: MainNavProps) {
               className="flex items-center py-4"
               onClick={() => setOpen(false)}
             >
-              <span className="text-lg font-bold">Clearstok</span>
+              <span className="text-lg font-bold">Clearstock</span>
             </Link>
             {restaurantName && (
               <div className="px-3 pb-2">
@@ -131,7 +131,7 @@ export function MainNav({ restaurantName }: MainNavProps) {
 
         {/* Mobile: Show app name next to menu button */}
         <Link href="/" className="md:hidden ml-2 font-bold text-base">
-          Clearstok
+          Clearstock
         </Link>
         
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">

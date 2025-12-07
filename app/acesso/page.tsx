@@ -180,7 +180,7 @@ export default function AccessPage() {
           <div className="mx-auto mb-3 rounded-full bg-primary/10 p-3 md:p-4">
             <Lock className="h-6 w-6 md:h-7 md:w-7 text-primary" />
           </div>
-          <CardTitle className="text-xl md:text-2xl font-bold">Acesso Clearstok</CardTitle>
+          <CardTitle className="text-xl md:text-2xl font-bold">Acesso Clearstock</CardTitle>
           <CardDescription className="text-sm md:text-base">
             Introduza o PIN de 6 dígitos do seu restaurante.
           </CardDescription>

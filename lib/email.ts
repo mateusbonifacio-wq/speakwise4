@@ -42,7 +42,7 @@ export async function sendSupportEmail(data: SupportEmailData) {
   const subject = `Novo pedido de suporte - ${restaurantDisplay}`;
 
   const emailBody = `
-Novo pedido de suporte da Clearstok:
+Novo pedido de suporte da Clearstock:
 
 Restaurante: ${restaurantDisplay}
 PIN: ${data.restaurantPin}
