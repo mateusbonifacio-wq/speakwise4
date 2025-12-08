@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useTransition } from "react";
+import { useState, useMemo, useEffect, useTransition, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { deleteProductBatch, adjustBatchQuantity } from "@/app/actions";
 import { Button } from "@/components/ui/button";
@@ -112,28 +112,39 @@ export function StockViewSimple({
   const [adjustingBatchId, setAdjustingBatchId] = useState<string | null>(null);
 
   // Update status filter and search query when props change (e.g., from navigation)
+  // Usar useRef para evitar re-renders desnecessários
+  const hasInitialized = useRef(false);
   useEffect(() => {
+    // Só inicializar uma vez
+    if (hasInitialized.current) return;
+    
+    let shouldUpdate = false;
+    const updates: Partial<typeof filters> = {};
+    
     if (initialStatusFilter && ["expired", "urgent", "attention", "ok"].includes(initialStatusFilter)) {
-      setFilters(prev => ({
-        ...prev,
-        [activeTab]: {
-          ...prev[activeTab],
-          statusFilter: initialStatusFilter as StatusFilter,
-        },
-      }));
+      updates[activeTab] = {
+        ...filters[activeTab],
+        statusFilter: initialStatusFilter as StatusFilter,
+      };
+      shouldUpdate = true;
     }
+    
     if (initialSearchQuery) {
-      setFilters(prev => ({
-        ...prev,
-        all: {
-          ...prev.all,
-          searchQuery: initialSearchQuery,
-        },
-      }));
+      updates.all = {
+        ...filters.all,
+        searchQuery: initialSearchQuery,
+      };
       // Se há uma pesquisa inicial, mudar para o tab "Todos" para mostrar os resultados
       setActiveTab("all");
+      shouldUpdate = true;
     }
-  }, [initialStatusFilter, initialSearchQuery, activeTab]);
+    
+    if (shouldUpdate) {
+      setFilters(prev => ({ ...prev, ...updates }));
+      hasInitialized.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialStatusFilter, initialSearchQuery]);
   
   // Helper to update current tab's filters
   const updateCurrentFilters = (updates: Partial<typeof currentFilters>) => {
@@ -224,7 +235,11 @@ export function StockViewSimple({
   }, [categories, activeTab]);
 
   // Filtrar batches baseado na pesquisa, filtro de status, tipo, categoria, localização e finished items
+  // Não calcular se estiver no tab "general" (não é usado nesse caso)
   const filteredBatches = useMemo(() => {
+    // Early return se estiver no tab general - não precisa filtrar
+    if (activeTab === "general") return [];
+    
     let filtered = batches;
 
     // Filter by tipo (product type)
@@ -278,20 +293,28 @@ export function StockViewSimple({
   });
 
   // Agrupar produtos por nome (case-insensitive) para Stock Geral (excluindo expirados)
+  // Só calcula quando o tab está ativo e os dados mudaram
   const generalStock = useMemo(() => {
+    // Early return se não estiver no tab general
     if (activeTab !== "general") return {};
+    
+    // Early return se não houver dados
     if (!batches || !Array.isArray(batches) || batches.length === 0) return {};
     if (!restaurant) return {};
+    
     try {
       return aggregateBatchesByProductNameCaseInsensitive(batches, restaurant);
     } catch (error) {
       console.error("Error aggregating general stock:", error);
       return {};
     }
-  }, [batches, restaurant, activeTab]);
+    // Remover activeTab das dependências - só recalcula quando batches ou restaurant mudam
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batches, restaurant]);
 
-  // Ordenar produtos do Stock Geral alfabeticamente
+  // Ordenar produtos do Stock Geral alfabeticamente - só quando generalStock mudar
   const generalStockProductNames = useMemo(() => {
+    if (activeTab !== "general") return [];
     if (!generalStock || Object.keys(generalStock).length === 0) return [];
     try {
       return Object.keys(generalStock).sort((a, b) => {
@@ -304,12 +327,12 @@ export function StockViewSimple({
       console.error("Error sorting general stock products:", error);
       return [];
     }
-  }, [generalStock]);
+  }, [generalStock, activeTab]);
 
-  // Handler para navegar ao clicar num produto no Stock Geral
-  const handleGeneralStockProductClick = (productName: string) => {
+  // Handler para navegar ao clicar num produto no Stock Geral - memoizado
+  const handleGeneralStockProductClick = useCallback((productName: string) => {
     router.push(`/stock?search=${encodeURIComponent(productName)}`);
-  };
+  }, [router]);
 
   // Map status to badge type
   const getBadgeStatus = (status: ReturnType<typeof getBatchStatus>): "expired" | "urgent" | "attention" | "ok" => {
