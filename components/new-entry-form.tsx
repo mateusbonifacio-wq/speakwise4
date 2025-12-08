@@ -312,14 +312,18 @@ export default function NewEntryForm({
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant={selectedQuickDays === 0 ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
                       const today = new Date().toISOString().split("T")[0];
-                      setSelectedQuickDays(null);
-                      setFormData((prev) => ({ ...prev, expiryDate: today, extraDays: "" }));
+                      setSelectedQuickDays(0);
+                      setFormData((prev) => ({ ...prev, expiryDate: today, extraDays: "0" }));
                     }}
-                    className="text-xs md:text-sm px-3 py-1 h-8 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+                    className={`text-xs md:text-sm px-3 py-1 h-8 rounded-lg ${
+                      selectedQuickDays === 0
+                        ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                        : "border border-gray-300 bg-white hover:bg-gray-50"
+                    }`}
                     disabled={isPending}
                   >
                     Hoje
@@ -366,15 +370,20 @@ export default function NewEntryForm({
                   </Button>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant={selectedQuickDays === 7 ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
                       const in7Days = new Date();
                       in7Days.setDate(in7Days.getDate() + 7);
                       const dateStr = in7Days.toISOString().split("T")[0];
-                      setFormData((prev) => ({ ...prev, expiryDate: dateStr, extraDays: "" }));
+                      setSelectedQuickDays(7);
+                      setFormData((prev) => ({ ...prev, expiryDate: dateStr, extraDays: "7" }));
                     }}
-                    className="text-xs md:text-sm px-3 py-1 h-8 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+                    className={`text-xs md:text-sm px-3 py-1 h-8 rounded-lg ${
+                      selectedQuickDays === 7
+                        ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                        : "border border-gray-300 bg-white hover:bg-gray-50"
+                    }`}
                     disabled={isPending}
                   >
                     +7 dias
@@ -393,11 +402,22 @@ export default function NewEntryForm({
                     value={formData.extraDays}
                     onChange={(e) => {
                       const inputValue = e.target.value;
-                      // Se o utilizador editar manualmente, limpar a seleção do botão
+                      // Se o utilizador editar manualmente, verificar se ainda corresponde a um botão
                       if (selectedQuickDays !== null) {
                         const quickDaysValue = selectedQuickDays.toString();
                         if (inputValue !== quickDaysValue) {
                           setSelectedQuickDays(null);
+                        }
+                      } else {
+                        // Se não há seleção, verificar se o valor corresponde a algum botão
+                        if (inputValue === "0") {
+                          setSelectedQuickDays(0);
+                        } else if (inputValue === "1") {
+                          setSelectedQuickDays(1);
+                        } else if (inputValue === "3") {
+                          setSelectedQuickDays(3);
+                        } else if (inputValue === "7") {
+                          setSelectedQuickDays(7);
                         }
                       }
                       
