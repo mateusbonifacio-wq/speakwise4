@@ -529,7 +529,7 @@ export function StockViewSimple({
         ) : (
           <div className="space-y-4 md:space-y-6">
             {generalStockProductNames.map((normalizedName) => {
-              const product = generalStock[normalizedName];
+              const product = generalStockComputed[normalizedName];
               
               // Verificação defensiva
               if (!product || !product.displayName) {
