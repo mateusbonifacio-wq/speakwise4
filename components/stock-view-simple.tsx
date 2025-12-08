@@ -280,14 +280,30 @@ export function StockViewSimple({
   // Agrupar produtos por nome (case-insensitive) para Stock Geral (excluindo expirados)
   const generalStock = useMemo(() => {
     if (activeTab !== "general") return {};
-    return aggregateBatchesByProductNameCaseInsensitive(batches, restaurant);
+    if (!batches || !Array.isArray(batches) || batches.length === 0) return {};
+    if (!restaurant) return {};
+    try {
+      return aggregateBatchesByProductNameCaseInsensitive(batches, restaurant);
+    } catch (error) {
+      console.error("Error aggregating general stock:", error);
+      return {};
+    }
   }, [batches, restaurant, activeTab]);
 
   // Ordenar produtos do Stock Geral alfabeticamente
   const generalStockProductNames = useMemo(() => {
-    return Object.keys(generalStock).sort((a, b) => {
-      return generalStock[a].displayName.localeCompare(generalStock[b].displayName);
-    });
+    if (!generalStock || Object.keys(generalStock).length === 0) return [];
+    try {
+      return Object.keys(generalStock).sort((a, b) => {
+        const productA = generalStock[a];
+        const productB = generalStock[b];
+        if (!productA || !productB) return 0;
+        return (productA.displayName || "").localeCompare(productB.displayName || "");
+      });
+    } catch (error) {
+      console.error("Error sorting general stock products:", error);
+      return [];
+    }
   }, [generalStock]);
 
   // Handler para navegar ao clicar num produto no Stock Geral
@@ -494,6 +510,11 @@ export function StockViewSimple({
             {generalStockProductNames.map((normalizedName) => {
               const product = generalStock[normalizedName];
               
+              // Verificação defensiva
+              if (!product || !product.displayName) {
+                return null;
+              }
+              
               return (
                 <div
                   key={normalizedName}
@@ -512,10 +533,10 @@ export function StockViewSimple({
                     <div className="flex items-center gap-2">
                       <Package className="h-4 w-4 flex-shrink-0" />
                       <span className="font-medium text-foreground">
-                        {product.totalQuantity} {product.unit}
+                        {product.totalQuantity || 0} {product.unit || "un"}
                       </span>
                     </div>
-                    {product.locations.length > 0 && (
+                    {product.locations && product.locations.length > 0 && (
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 flex-shrink-0" />
                         <span className="truncate">

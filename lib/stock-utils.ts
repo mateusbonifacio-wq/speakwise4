@@ -245,35 +245,43 @@ export function aggregateBatchesByProductNameCaseInsensitive(
     for (const batch of batches) {
       if (!batch || !batch.name) continue;
 
-      // Verificar se está expirado
-      const status = getBatchStatus(batch, restaurant);
-      if (status.status === "expired") {
-        continue; // Ignorar produtos expirados
-      }
+      try {
+        // Verificar se está expirado
+        const status = getBatchStatus(batch, restaurant);
+        if (status.status === "expired") {
+          continue; // Ignorar produtos expirados
+        }
 
-      // Normalizar nome para agrupamento (case-insensitive)
-      const normalizedName = batch.name.trim().toLowerCase();
-      
-      // Nome "bonito" para exibição (usa o primeiro nome encontrado)
-      const displayName = batch.name.trim();
+        // Normalizar nome para agrupamento (case-insensitive)
+        const normalizedName = (batch.name || "").trim().toLowerCase();
+        if (!normalizedName) continue; // Skip se nome vazio após trim
+        
+        // Nome "bonito" para exibição (usa o primeiro nome encontrado)
+        const displayName = (batch.name || "").trim();
+        if (!displayName) continue; // Skip se displayName vazio
 
-      if (!aggregated[normalizedName]) {
-        aggregated[normalizedName] = {
-          displayName,
-          totalQuantity: 0,
-          unit: batch.unit || "un",
-          locations: new Set<string>(),
-          batches: [],
-        };
-      }
+        if (!aggregated[normalizedName]) {
+          aggregated[normalizedName] = {
+            displayName,
+            totalQuantity: 0,
+            unit: batch.unit || "un",
+            locations: new Set<string>(),
+            batches: [],
+          };
+        }
 
-      // Adicionar batch ao grupo
-      aggregated[normalizedName].batches.push(batch);
-      aggregated[normalizedName].totalQuantity += batch.quantity || 0;
+        // Adicionar batch ao grupo
+        aggregated[normalizedName].batches.push(batch);
+        const quantity = typeof batch.quantity === "number" ? batch.quantity : 0;
+        aggregated[normalizedName].totalQuantity += quantity;
 
-      // Adicionar localização se existir
-      if (batch.location && batch.location.name) {
-        aggregated[normalizedName].locations.add(batch.location.name);
+        // Adicionar localização se existir
+        if (batch.location && batch.location.name && typeof batch.location.name === "string") {
+          aggregated[normalizedName].locations.add(batch.location.name);
+        }
+      } catch (error) {
+        console.error("Error processing batch in aggregateBatchesByProductNameCaseInsensitive:", error, batch);
+        continue; // Skip este batch e continua com o próximo
       }
     }
 
