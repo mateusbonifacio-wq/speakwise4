@@ -34,6 +34,7 @@ export default function NewEntryForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showDetails, setShowDetails] = useState(false);
+  const [selectedQuickDays, setSelectedQuickDays] = useState<number | null>(null); // Track which quick button is selected
   const [formData, setFormData] = useState({
     tipo: "mp" as "mp" | "transformado",
     name: "",
@@ -92,6 +93,7 @@ export default function NewEntryForm({
                     size: "",
                     sizeUnit: "",
                   });
+                  setSelectedQuickDays(null);
                   setShowDetails(false);
 
           // Reset form element (for native HTML form reset)
@@ -153,6 +155,7 @@ export default function NewEntryForm({
                 name="tipo"
                 value={formData.tipo}
                 onValueChange={(value: "mp" | "transformado") => {
+                  setSelectedQuickDays(null);
                   setFormData((prev) => ({ ...prev, tipo: value, categoryId: "", expiryDate: "", extraDays: "" }));
                 }}
                 disabled={isPending}
@@ -313,6 +316,7 @@ export default function NewEntryForm({
                     size="sm"
                     onClick={() => {
                       const today = new Date().toISOString().split("T")[0];
+                      setSelectedQuickDays(null);
                       setFormData((prev) => ({ ...prev, expiryDate: today, extraDays: "" }));
                     }}
                     className="text-xs md:text-sm px-3 py-1 h-8 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
@@ -322,30 +326,40 @@ export default function NewEntryForm({
                   </Button>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant={selectedQuickDays === 1 ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
                       const tomorrow = new Date();
                       tomorrow.setDate(tomorrow.getDate() + 1);
                       const dateStr = tomorrow.toISOString().split("T")[0];
-                      setFormData((prev) => ({ ...prev, expiryDate: dateStr, extraDays: "" }));
+                      setSelectedQuickDays(1);
+                      setFormData((prev) => ({ ...prev, expiryDate: dateStr, extraDays: "1" }));
                     }}
-                    className="text-xs md:text-sm px-3 py-1 h-8 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+                    className={`text-xs md:text-sm px-3 py-1 h-8 rounded-lg ${
+                      selectedQuickDays === 1
+                        ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                        : "border border-gray-300 bg-white hover:bg-gray-50"
+                    }`}
                     disabled={isPending}
                   >
                     +1 dia
                   </Button>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant={selectedQuickDays === 3 ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
                       const in3Days = new Date();
                       in3Days.setDate(in3Days.getDate() + 3);
                       const dateStr = in3Days.toISOString().split("T")[0];
-                      setFormData((prev) => ({ ...prev, expiryDate: dateStr, extraDays: "" }));
+                      setSelectedQuickDays(3);
+                      setFormData((prev) => ({ ...prev, expiryDate: dateStr, extraDays: "3" }));
                     }}
-                    className="text-xs md:text-sm px-3 py-1 h-8 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+                    className={`text-xs md:text-sm px-3 py-1 h-8 rounded-lg ${
+                      selectedQuickDays === 3
+                        ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                        : "border border-gray-300 bg-white hover:bg-gray-50"
+                    }`}
                     disabled={isPending}
                   >
                     +3 dias
@@ -378,14 +392,23 @@ export default function NewEntryForm({
                     min="0"
                     value={formData.extraDays}
                     onChange={(e) => {
-                      const days = parseInt(e.target.value) || 0;
-                      if (days >= 0) {
+                      const inputValue = e.target.value;
+                      // Se o utilizador editar manualmente, limpar a seleção do botão
+                      if (selectedQuickDays !== null) {
+                        const quickDaysValue = selectedQuickDays.toString();
+                        if (inputValue !== quickDaysValue) {
+                          setSelectedQuickDays(null);
+                        }
+                      }
+                      
+                      const days = parseInt(inputValue) || 0;
+                      if (days >= 0 || inputValue === "") {
                         const baseDate = formData.expiryDate ? new Date(formData.expiryDate) : new Date();
                         const newDate = new Date(baseDate);
                         newDate.setDate(newDate.getDate() + days);
                         setFormData((prev) => ({ 
                           ...prev, 
-                          extraDays: e.target.value,
+                          extraDays: inputValue,
                           expiryDate: newDate.toISOString().split("T")[0]
                         }));
                       }
