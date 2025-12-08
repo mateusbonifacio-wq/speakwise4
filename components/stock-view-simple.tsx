@@ -19,7 +19,7 @@ import { MapPin, Package, Search, Edit, Trash2, Plus, Minus } from "lucide-react
 import { EditBatchDialog } from "./edit-batch-dialog";
 import { StatusBadge } from "./status-badge";
 import { Badge } from "@/components/ui/badge";
-import { getBatchStatus, groupBatchesByCategory } from "@/lib/stock-utils";
+import { getBatchStatus, groupBatchesByCategory, aggregateBatchesByProductNameCaseInsensitive } from "@/lib/stock-utils";
 import { toast } from "sonner";
 import type { Category, Location, Restaurant } from "@prisma/client";
 import type { BatchWithRelations } from "@/lib/stock-utils";
@@ -30,13 +30,14 @@ interface StockViewSimpleProps {
   categories: Category[];
   locations: Location[];
   initialStatusFilter?: string;
+  initialSearchQuery?: string;
 }
 
 /**
  * Versão simplificada do StockView com Search bar
  */
 export type StatusFilter = "all" | "expired" | "urgent" | "attention" | "ok";
-export type TipoFilter = "mp" | "transformado" | "all";
+export type TipoFilter = "mp" | "transformado" | "all" | "general";
 
 export function StockViewSimple({
   batches,
@@ -44,6 +45,7 @@ export function StockViewSimple({
   categories,
   locations,
   initialStatusFilter,
+  initialSearchQuery,
 }: StockViewSimpleProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -82,6 +84,13 @@ export function StockViewSimple({
       locationFilter: "",
       showFinished: false,
     },
+    general: {
+      statusFilter: "all",
+      searchQuery: "",
+      categoryFilter: "",
+      locationFilter: "",
+      showFinished: false,
+    },
   });
   
   // Get current tab's filters
@@ -102,7 +111,7 @@ export function StockViewSimple({
   const [isDeleting, setIsDeleting] = useState(false);
   const [adjustingBatchId, setAdjustingBatchId] = useState<string | null>(null);
 
-  // Update status filter when prop changes (e.g., from navigation)
+  // Update status filter and search query when props change (e.g., from navigation)
   useEffect(() => {
     if (initialStatusFilter && ["expired", "urgent", "attention", "ok"].includes(initialStatusFilter)) {
       setFilters(prev => ({
@@ -113,7 +122,18 @@ export function StockViewSimple({
         },
       }));
     }
-  }, [initialStatusFilter, activeTab]);
+    if (initialSearchQuery) {
+      setFilters(prev => ({
+        ...prev,
+        all: {
+          ...prev.all,
+          searchQuery: initialSearchQuery,
+        },
+      }));
+      // Se há uma pesquisa inicial, mudar para o tab "Todos" para mostrar os resultados
+      setActiveTab("all");
+    }
+  }, [initialStatusFilter, initialSearchQuery, activeTab]);
   
   // Helper to update current tab's filters
   const updateCurrentFilters = (updates: Partial<typeof currentFilters>) => {
@@ -257,6 +277,24 @@ export function StockViewSimple({
     return a.localeCompare(b);
   });
 
+  // Agrupar produtos por nome (case-insensitive) para Stock Geral (excluindo expirados)
+  const generalStock = useMemo(() => {
+    if (activeTab !== "general") return {};
+    return aggregateBatchesByProductNameCaseInsensitive(batches, restaurant);
+  }, [batches, restaurant, activeTab]);
+
+  // Ordenar produtos do Stock Geral alfabeticamente
+  const generalStockProductNames = useMemo(() => {
+    return Object.keys(generalStock).sort((a, b) => {
+      return generalStock[a].displayName.localeCompare(generalStock[b].displayName);
+    });
+  }, [generalStock]);
+
+  // Handler para navegar ao clicar num produto no Stock Geral
+  const handleGeneralStockProductClick = (productName: string) => {
+    router.push(`/stock?search=${encodeURIComponent(productName)}`);
+  };
+
   // Map status to badge type
   const getBadgeStatus = (status: ReturnType<typeof getBatchStatus>): "expired" | "urgent" | "attention" | "ok" => {
     if (status.status === "expired") return "expired";
@@ -299,54 +337,66 @@ export function StockViewSimple({
         >
           Todos
         </button>
+        <button
+          onClick={() => setActiveTab("general")}
+          className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
+            activeTab === "general"
+              ? "bg-indigo-600 text-white"
+              : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+          }`}
+        >
+          Stock Geral
+        </button>
       </div>
 
-      {/* Category and Location filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <select
-          value={categoryFilter}
-          onChange={(e) => updateCurrentFilters({ categoryFilter: e.target.value })}
-          className="flex-1 h-11 md:h-10 text-base border-gray-300 rounded-lg px-4 py-2"
-        >
-          <option value="">Todas as categorias</option>
-          {filteredCategories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={locationFilter}
-          onChange={(e) => updateCurrentFilters({ locationFilter: e.target.value })}
-          className="flex-1 h-11 md:h-10 text-base border-gray-300 rounded-lg px-4 py-2"
-        >
-          <option value="">Todas as localizações</option>
-          {locations.map((loc) => (
-            <option key={loc.id} value={loc.id}>
-              {loc.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Category and Location filters - Only show for non-general tabs */}
+      {activeTab !== "general" && (
+        <>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <select
+              value={categoryFilter}
+              onChange={(e) => updateCurrentFilters({ categoryFilter: e.target.value })}
+              className="flex-1 h-11 md:h-10 text-base border-gray-300 rounded-lg px-4 py-2"
+            >
+              <option value="">Todas as categorias</option>
+              {filteredCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={locationFilter}
+              onChange={(e) => updateCurrentFilters({ locationFilter: e.target.value })}
+              className="flex-1 h-11 md:h-10 text-base border-gray-300 rounded-lg px-4 py-2"
+            >
+              <option value="">Todas as localizações</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {/* Show finished toggle and status filters */}
-      <div className="flex flex-col gap-3 mb-4">
-        {/* Toggle to show finished items */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="showFinished"
-            checked={showFinished}
-            onChange={(e) => updateCurrentFilters({ showFinished: e.target.checked })}
-            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-          />
-          <label htmlFor="showFinished" className="text-sm font-medium text-gray-700 cursor-pointer">
-            Mostrar também esgotados
-          </label>
-        </div>
+          {/* Show finished toggle and status filters */}
+          <div className="flex flex-col gap-3 mb-4">
+            {/* Toggle to show finished items */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="showFinished"
+                checked={showFinished}
+                onChange={(e) => updateCurrentFilters({ showFinished: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <label htmlFor="showFinished" className="text-sm font-medium text-gray-700 cursor-pointer">
+                Mostrar também esgotados
+              </label>
+            </div>
 
-        {/* Status filters - Mobile-first pill buttons */}
-        <div className="flex flex-wrap gap-2">
+            {/* Status filters - Mobile-first pill buttons */}
+            <div className="flex flex-wrap gap-2">
         <Button
           variant={statusFilter === "all" ? "default" : "outline"}
           size="sm"
@@ -409,19 +459,79 @@ export function StockViewSimple({
         </Button>
         </div>
       </div>
+        </>
+      )}
 
-      {/* Mobile-first search bar - Full width with border-gray-300 styling */}
-      <div className="relative w-full mb-4">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 md:h-5 md:w-5 -translate-y-1/2 text-muted-foreground z-10" />
-        <Input
-          placeholder="Pesquisar produto..."
-          value={searchQuery}
-          onChange={(e) => updateCurrentFilters({ searchQuery: e.target.value })}
-          className="pl-10 md:pl-10 pr-4 h-11 md:h-10 text-base border-gray-300 rounded-lg w-full"
-        />
-      </div>
+      {/* Mobile-first search bar - Full width with border-gray-300 styling - Only show for non-general tabs */}
+      {activeTab !== "general" && (
+        <div className="relative w-full mb-4">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 md:h-5 md:w-5 -translate-y-1/2 text-muted-foreground z-10" />
+          <Input
+            placeholder="Pesquisar produto..."
+            value={searchQuery}
+            onChange={(e) => updateCurrentFilters({ searchQuery: e.target.value })}
+            className="pl-10 md:pl-10 pr-4 h-11 md:h-10 text-base border-gray-300 rounded-lg w-full"
+          />
+        </div>
+      )}
 
-      {filteredBatches.length === 0 ? (
+      {/* Stock Geral View */}
+      {activeTab === "general" ? (
+        generalStockProductNames.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
+              <p className="text-lg font-medium mb-2">
+                Ainda não existem produtos em stock
+              </p>
+              <p className="text-sm">
+                Adicione uma entrada em "Nova Entrada".
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4 md:space-y-6">
+            {generalStockProductNames.map((normalizedName) => {
+              const product = generalStock[normalizedName];
+              
+              return (
+                <div
+                  key={normalizedName}
+                  onClick={() => handleGeneralStockProductClick(product.displayName)}
+                  className="bg-white rounded-xl shadow-sm p-4 mb-3 border border-gray-100 hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer"
+                >
+                  {/* Product name */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <h3 className="text-base md:text-lg font-semibold text-foreground">
+                      {product.displayName}
+                    </h3>
+                  </div>
+
+                  {/* Product details */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 flex-shrink-0" />
+                      <span className="font-medium text-foreground">
+                        {product.totalQuantity} {product.unit}
+                      </span>
+                    </div>
+                    {product.locations.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">
+                          {product.locations.length === 1
+                            ? product.locations[0]
+                            : `${product.locations.length} localizações`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : filteredBatches.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />

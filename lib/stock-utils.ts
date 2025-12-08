@@ -202,3 +202,107 @@ export function aggregateBatchesByProduct(batches: BatchWithRelations[]) {
   }
 }
 
+/**
+ * Agrupa batches por nome de produto (case-insensitive), excluindo produtos expirados.
+ * Para cada produto, calcula:
+ * - Total de quantidade (soma de todas as entradas não expiradas)
+ * - Lista de localizações distintas
+ * - Nome "bonito" (usa o primeiro nome encontrado do grupo)
+ * - Unidade (assume que é igual para todos os items do grupo)
+ * @param batches - Array de batches
+ * @param restaurant - O restaurante para calcular status de expiração
+ * @returns Record com nome normalizado como chave e dados agregados como valor
+ */
+export function aggregateBatchesByProductNameCaseInsensitive(
+  batches: BatchWithRelations[],
+  restaurant: Restaurant
+): Record<
+  string,
+  {
+    displayName: string; // Nome "bonito" para exibição
+    totalQuantity: number;
+    unit: string;
+    locations: string[]; // Lista de localizações distintas
+    batches: BatchWithRelations[]; // Todos os batches não expirados do grupo
+  }
+> {
+  try {
+    if (!Array.isArray(batches)) {
+      return {};
+    }
+
+    const aggregated: Record<
+      string,
+      {
+        displayName: string;
+        totalQuantity: number;
+        unit: string;
+        locations: Set<string>;
+        batches: BatchWithRelations[];
+      }
+    > = {};
+
+    for (const batch of batches) {
+      if (!batch || !batch.name) continue;
+
+      // Verificar se está expirado
+      const status = getBatchStatus(batch, restaurant);
+      if (status.status === "expired") {
+        continue; // Ignorar produtos expirados
+      }
+
+      // Normalizar nome para agrupamento (case-insensitive)
+      const normalizedName = batch.name.trim().toLowerCase();
+      
+      // Nome "bonito" para exibição (usa o primeiro nome encontrado)
+      const displayName = batch.name.trim();
+
+      if (!aggregated[normalizedName]) {
+        aggregated[normalizedName] = {
+          displayName,
+          totalQuantity: 0,
+          unit: batch.unit || "un",
+          locations: new Set<string>(),
+          batches: [],
+        };
+      }
+
+      // Adicionar batch ao grupo
+      aggregated[normalizedName].batches.push(batch);
+      aggregated[normalizedName].totalQuantity += batch.quantity || 0;
+
+      // Adicionar localização se existir
+      if (batch.location && batch.location.name) {
+        aggregated[normalizedName].locations.add(batch.location.name);
+      }
+    }
+
+    // Converter Set de localizações para array
+    const result: Record<
+      string,
+      {
+        displayName: string;
+        totalQuantity: number;
+        unit: string;
+        locations: string[];
+        batches: BatchWithRelations[];
+      }
+    > = {};
+
+    for (const [normalizedName, data] of Object.entries(aggregated)) {
+      result[normalizedName] = {
+        displayName: data.displayName,
+        totalQuantity: data.totalQuantity,
+        unit: data.unit,
+        locations: Array.from(data.locations).sort(),
+        batches: data.batches,
+      };
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error aggregating batches by product name (case-insensitive):", error);
+    return {};
+  }
+}
+

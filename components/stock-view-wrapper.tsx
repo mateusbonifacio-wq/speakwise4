@@ -30,8 +30,9 @@ export function StockViewWrapper({
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Get initial status filter from URL
+  // Get initial status filter and search query from URL
   const initialStatusFilter = searchParams?.get("status") || undefined;
+  const initialSearchQuery = searchParams?.get("search") || undefined;
 
   useEffect(() => {
     try {
@@ -145,6 +146,7 @@ export function StockViewWrapper({
       categories={Array.isArray(categories) ? categories : []}
       locations={Array.isArray(locations) ? locations : []}
       initialStatusFilter={initialStatusFilter}
+      initialSearchQuery={initialSearchQuery}
     />
   );
 }
