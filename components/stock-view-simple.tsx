@@ -293,12 +293,8 @@ export function StockViewSimple({
   });
 
   // Agrupar produtos por nome (case-insensitive) para Stock Geral (excluindo expirados)
-  // Calcula sempre, mas só retorna resultado quando activeTab === "general"
-  // Usa uma estratégia de cache para evitar recálculos desnecessários
-  const generalStock = useMemo(() => {
-    // Early return se não estiver no tab general
-    if (activeTab !== "general") return {};
-    
+  // Calcula sempre (independentemente do tab ativo) para ter dados prontos quando necessário
+  const generalStockComputed = useMemo(() => {
     // Early return se não houver dados
     if (!batches || !Array.isArray(batches) || batches.length === 0) return {};
     if (!restaurant) return {};
@@ -309,16 +305,19 @@ export function StockViewSimple({
       console.error("Error aggregating general stock:", error);
       return {};
     }
-  }, [batches, restaurant, activeTab]);
+  }, [batches, restaurant]);
+
+  // Só usar o generalStock quando estiver no tab "general"
+  const generalStock = activeTab === "general" ? generalStockComputed : {};
 
   // Ordenar produtos do Stock Geral alfabeticamente - só quando generalStock mudar
   const generalStockProductNames = useMemo(() => {
     if (activeTab !== "general") return [];
-    if (!generalStock || Object.keys(generalStock).length === 0) return [];
+    if (!generalStockComputed || Object.keys(generalStockComputed).length === 0) return [];
     try {
-      return Object.keys(generalStock).sort((a, b) => {
-        const productA = generalStock[a];
-        const productB = generalStock[b];
+      return Object.keys(generalStockComputed).sort((a, b) => {
+        const productA = generalStockComputed[a];
+        const productB = generalStockComputed[b];
         if (!productA || !productB) return 0;
         return (productA.displayName || "").localeCompare(productB.displayName || "");
       });
@@ -326,7 +325,7 @@ export function StockViewSimple({
       console.error("Error sorting general stock products:", error);
       return [];
     }
-  }, [generalStock, activeTab]);
+  }, [generalStockComputed, activeTab]);
 
   // Handler para navegar ao clicar num produto no Stock Geral - memoizado
   const handleGeneralStockProductClick = useCallback((productName: string) => {
