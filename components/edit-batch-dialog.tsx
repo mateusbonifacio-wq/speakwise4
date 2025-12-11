@@ -66,7 +66,16 @@ export function EditBatchDialog({
         throw new Error("ID do batch não encontrado");
       }
 
+      console.log("[EditBatchDialog] Updating batch:", batch.id, {
+        name: formData.get("name"),
+        unit: formData.get("unit"),
+        quantity: formData.get("quantity"),
+      });
+
       await updateProductBatch(batch.id, formData);
+      
+      console.log("[EditBatchDialog] Batch updated successfully");
+      
       setIsSubmitting(false);
       onOpenChange(false);
       // Only refresh if dialog is still open (user might have closed it)
@@ -74,9 +83,15 @@ export function EditBatchDialog({
         router.refresh();
       }
     } catch (err) {
-      console.error("Error updating batch:", err);
+      console.error("[EditBatchDialog] Error updating batch:", err);
       setIsSubmitting(false);
-      setError(err instanceof Error ? err.message : "Erro ao guardar alterações");
+      const errorMessage = err instanceof Error ? err.message : "Erro ao guardar alterações";
+      setError(errorMessage);
+      // Also show toast for better UX
+      const { toast } = await import("sonner");
+      toast.error("Erro ao guardar", {
+        description: errorMessage,
+      });
     }
   }
 

@@ -693,13 +693,15 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
         let otherEventsUpdated = { count: 0 };
         
         // Get all events for this restaurant with the old unit
+        // Exclude events already linked to this batch (batchId can be null for old events)
         const allEventsWithOldUnit = await db.stockEvent.findMany({
           where: {
             restaurantId: restaurant.id,
             unit: currentBatch.unit, // Old unit
-            batchId: {
-              not: batchId, // Exclude events already linked to this batch
-            },
+            OR: [
+              { batchId: null }, // Events without batchId (old events)
+              { batchId: { not: batchId } }, // Events linked to other batches
+            ],
           },
           select: {
             id: true,
