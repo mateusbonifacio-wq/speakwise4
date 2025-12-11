@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo, useCallback } from "react";
+import { useState, useTransition, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createProductBatch } from "@/app/actions";
@@ -33,6 +33,13 @@ export default function NewEntryForm({
 }: NewEntryFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const renderCountRef = useRef(0);
+  
+  // Debug logging
+  useEffect(() => {
+    renderCountRef.current += 1;
+    console.log("[NewEntryForm] Render #", renderCountRef.current, { restaurantId, categoriesCount: categories.length, locationsCount: locations.length });
+  }, [restaurantId, categories.length, locations.length]);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedQuickDays, setSelectedQuickDays] = useState<number | null>(null); // Track which quick button is selected
   const [formData, setFormData] = useState({
