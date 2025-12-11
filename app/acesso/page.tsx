@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,29 +25,35 @@ export default function AccessPage() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutTimeLeft, setLockoutTimeLeft] = useState(0);
-  const [hasCheckedSession, setHasCheckedSession] = useState(false);
+  const hasCheckedSessionRef = useRef(false);
 
   // Check for valid session on mount (only once)
+  // CRITICAL FIX: Use ref instead of state to prevent re-renders and loops
   useEffect(() => {
     // Only check once on mount, avoid loops
-    if (hasCheckedSession) return;
+    if (hasCheckedSessionRef.current) {
+      console.log("[AccessPage] Session already checked, skipping");
+      return;
+    }
     
     const checkSession = () => {
       try {
         if (typeof window !== "undefined" && hasValidSession()) {
-          setHasCheckedSession(true);
+          console.log("[AccessPage] Valid session found, redirecting to /hoje");
+          hasCheckedSessionRef.current = true;
           // Use replace to avoid adding to history and prevent loops
           router.replace("/hoje");
         } else {
-          setHasCheckedSession(true);
+          console.log("[AccessPage] No valid session, staying on access page");
+          hasCheckedSessionRef.current = true;
         }
       } catch (error) {
-        console.error("Error checking session:", error);
+        console.error("[AccessPage] Error checking session:", error);
         // If there's an error, clear session and stay on access page
         if (typeof window !== "undefined") {
           clearAuth();
         }
-        setHasCheckedSession(true);
+        hasCheckedSessionRef.current = true;
       }
     };
     
@@ -55,7 +61,7 @@ export default function AccessPage() {
     const timeoutId = setTimeout(checkSession, 200);
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, []); // Only run once on mount - router is stable
 
   // Check if PIN has a restaurant name when PIN is 6 digits
   useEffect(() => {

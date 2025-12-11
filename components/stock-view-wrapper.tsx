@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { StockViewSimple } from "./stock-view-simple";
 import type { BatchWithRelations } from "@/lib/stock-utils";
@@ -34,7 +34,29 @@ export function StockViewWrapper({
   const initialStatusFilter = searchParams?.get("status") || undefined;
   const initialSearchQuery = searchParams?.get("search") || undefined;
 
+  // CRITICAL FIX: Memoize conversion to prevent unnecessary re-renders
+  // Only convert when batches or restaurant actually change (by reference or length)
+  const batchesLengthRef = useRef(batches?.length);
+  const restaurantIdRef = useRef(restaurant?.id);
+
   useEffect(() => {
+    // Skip if data hasn't actually changed
+    const batchesLength = batches?.length || 0;
+    const restaurantId = restaurant?.id;
+    
+    if (
+      batchesLengthRef.current === batchesLength &&
+      restaurantIdRef.current === restaurantId &&
+      convertedData !== null
+    ) {
+      console.log("[StockViewWrapper] Data unchanged, skipping conversion");
+      return;
+    }
+
+    console.log("[StockViewWrapper] Converting data", { batchesLength, restaurantId });
+    batchesLengthRef.current = batchesLength;
+    restaurantIdRef.current = restaurantId;
+
     try {
       if (!batches || !Array.isArray(batches)) {
         throw new Error("Batches não é um array válido");

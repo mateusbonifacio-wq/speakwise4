@@ -395,8 +395,10 @@ export function StockViewSimple({
       },
     }));
     // Navegar com replace para evitar adicionar ao histórico
+    // CRITICAL FIX: router is stable, don't include in deps
     router.replace(`/stock?search=${encodeURIComponent(productName)}`, { scroll: false });
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // router is stable, don't include in deps
 
   // Map status to badge type
   const getBadgeStatus = (status: ReturnType<typeof getBatchStatus>): "expired" | "urgent" | "attention" | "ok" => {

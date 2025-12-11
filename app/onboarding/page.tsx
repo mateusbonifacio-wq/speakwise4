@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,28 +19,52 @@ export default function OnboardingPage() {
   const [name, setName] = useState("");
   const [isPending, startTransition] = useTransition();
 
+  const hasCheckedRef = useRef(false);
+
   // Check if restaurant already has a name and redirect if so
+  // CRITICAL FIX: Use ref to prevent multiple checks and remove router from deps
   useEffect(() => {
+    // Only check once
+    if (hasCheckedRef.current) {
+      console.log("[OnboardingPage] Already checked, skipping");
+      return;
+    }
+    
     const checkExistingName = async () => {
-      const restaurantId = getRestaurantId();
-      if (restaurantId) {
-        // Find PIN for this restaurant ID
-        const pin = Object.entries(PIN_TO_RESTAURANT).find(
-          ([_, id]) => id === restaurantId
-        )?.[0];
-        
-        if (pin) {
-          const existingName = await getRestaurantNameByPin(pin);
-          if (existingName) {
-            // Restaurant already has a name, redirect to dashboard
-            router.push("/hoje");
+      try {
+        const restaurantId = getRestaurantId();
+        if (restaurantId) {
+          // Find PIN for this restaurant ID
+          const pin = Object.entries(PIN_TO_RESTAURANT).find(
+            ([_, id]) => id === restaurantId
+          )?.[0];
+          
+          if (pin) {
+            console.log("[OnboardingPage] Checking existing name for PIN:", pin);
+            const existingName = await getRestaurantNameByPin(pin);
+            if (existingName) {
+              // Restaurant already has a name, redirect to dashboard
+              console.log("[OnboardingPage] Restaurant already has name, redirecting to /hoje");
+              hasCheckedRef.current = true;
+              router.push("/hoje");
+            } else {
+              hasCheckedRef.current = true;
+            }
+          } else {
+            hasCheckedRef.current = true;
           }
+        } else {
+          hasCheckedRef.current = true;
         }
+      } catch (error) {
+        console.error("[OnboardingPage] Error checking existing name:", error);
+        hasCheckedRef.current = true;
       }
     };
     
     checkExistingName();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once - router is stable, don't include in deps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
