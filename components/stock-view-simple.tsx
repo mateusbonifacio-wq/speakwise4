@@ -319,16 +319,12 @@ export function StockViewSimple({
       try {
         const result = await adjustBatchQuantity(batchId, adjustment);
         if (result.success) {
-          // Success: clear optimistic update and refresh data
-          setOptimisticUpdates(prev => {
-            const next = new Map(prev);
-            next.delete(batchId);
-            return next;
-          });
-          // Use router.refresh() but it should be faster now since UI already updated
+          // Success: refresh data from server
+          // Keep optimistic update - it will be replaced when server data arrives
           router.refresh();
+          // Clear optimistic update after refresh (useEffect will handle this when batches update)
         } else {
-          // Error: revert optimistic update
+          // Error: revert optimistic update immediately
           setOptimisticUpdates(prev => {
             const next = new Map(prev);
             next.delete(batchId);
@@ -339,7 +335,7 @@ export function StockViewSimple({
           });
         }
       } catch (error) {
-        // Error: revert optimistic update
+        // Error: revert optimistic update immediately
         setOptimisticUpdates(prev => {
           const next = new Map(prev);
           next.delete(batchId);
