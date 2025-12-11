@@ -666,10 +666,18 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
       },
     });
 
-    // If name or unit changed, update all historical events linked to this batch
+    // If name or unit changed, update all historical events
     if (nameChanged || unitChanged) {
       try {
-        const updatedEvents = await db.stockEvent.updateMany({
+        const restaurant = await getRestaurantByTenantId(tenantId);
+        
+        // Normalize product names for comparison (case-insensitive, trimmed)
+        const normalizeName = (n: string) => n.trim().toLowerCase();
+        const oldNormalizedName = normalizeName(currentBatch.name);
+        const newNormalizedName = normalizeName(name);
+        
+        // Update events linked to this specific batch
+        const batchEventsUpdated = await db.stockEvent.updateMany({
           where: {
             batchId: batchId,
           },
@@ -678,7 +686,48 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
             unit: unit,
           },
         });
-        console.log(`[updateProductBatch] Updated ${updatedEvents.count} historical events for batch ${batchId} (name: ${currentBatch.name} -> ${name}, unit: ${currentBatch.unit} -> ${unit})`);
+        
+        // Also update all other events of the same product (normalized name) with the old unit
+        // This helps uniformize units across all batches of the same product
+        // Example: if changing "batata" from "un" to "kg", update all "batata" events in "un" to "kg"
+        let otherEventsUpdated = { count: 0 };
+        
+        // Get all events for this restaurant with the old unit
+        const allEventsWithOldUnit = await db.stockEvent.findMany({
+          where: {
+            restaurantId: restaurant.id,
+            unit: currentBatch.unit, // Old unit
+            batchId: {
+              not: batchId, // Exclude events already linked to this batch
+            },
+          },
+          select: {
+            id: true,
+            productName: true,
+          },
+        });
+        
+        // Filter events where normalized name matches the old product name
+        const matchingEvents = allEventsWithOldUnit.filter(
+          e => normalizeName(e.productName) === oldNormalizedName
+        );
+        
+        if (matchingEvents.length > 0) {
+          const matchingIds = matchingEvents.map(e => e.id);
+          otherEventsUpdated = await db.stockEvent.updateMany({
+            where: {
+              id: {
+                in: matchingIds,
+              },
+            },
+            data: {
+              productName: name, // Use the new name (with correct casing)
+              unit: unit, // New unit
+            },
+          });
+        }
+        
+        console.log(`[updateProductBatch] Updated ${batchEventsUpdated.count} batch events and ${otherEventsUpdated.count} other events for product (name: ${currentBatch.name} -> ${name}, unit: ${currentBatch.unit} -> ${unit})`);
       } catch (eventError) {
         // Don't fail the whole operation if event update fails
         console.error(`[updateProductBatch] Error updating historical events for batch ${batchId}:`, eventError);
