@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format, subMonths } from "date-fns";
 import { pt } from "date-fns/locale";
-import { Package, BarChart3, AlertTriangle } from "lucide-react";
+import { Package, BarChart3, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { aggregateEventsByProduct, calculateMonthlySummary, type MonthlySummary, type ProductSummary } from "@/lib/history-utils";
 
 interface HistoryContentProps {
   restaurantId: string;
@@ -19,15 +20,6 @@ interface StockEvent {
   quantity: number;
   unit: string;
   createdAt: Date;
-}
-
-interface ProductSummary {
-  productName: string;
-  totalOrdered: number;
-  totalWasted: number;
-  wastePercentage: number;
-  unit: string;
-  suggestion: string;
 }
 
 export function HistoryContent({ restaurantId }: HistoryContentProps) {
@@ -90,86 +82,14 @@ export function HistoryContent({ restaurantId }: HistoryContentProps) {
     fetchEvents();
   }, [restaurantId, selectedMonth]);
 
-  // Calculate summary statistics
-  const summary = useMemo(() => {
-    const entryEvents = events.filter((e) => e.type === "ENTRY");
-    const wasteEvents = events.filter((e) => e.type === "WASTE");
-
-    const totalOrdered = entryEvents.reduce((sum, e) => sum + e.quantity, 0);
-    const totalWasted = wasteEvents.reduce((sum, e) => sum + e.quantity, 0);
-    const wastePercentage = totalOrdered > 0 ? (totalWasted / totalOrdered) * 100 : 0;
-
-    return {
-      totalOrdered,
-      totalWasted,
-      wastePercentage,
-      unit: entryEvents[0]?.unit || wasteEvents[0]?.unit || "un",
-    };
+  // Calculate summary statistics with robust handling
+  const summary: MonthlySummary = useMemo(() => {
+    return calculateMonthlySummary(events);
   }, [events]);
 
-  // Calculate product summaries
-  const productSummaries = useMemo(() => {
-    const productMap = new Map<string, { ordered: number; wasted: number; unit: string }>();
-
-    events.forEach((event) => {
-      const key = `${event.productName}|${event.unit}`;
-      if (!productMap.has(key)) {
-        productMap.set(key, { ordered: 0, wasted: 0, unit: event.unit });
-      }
-      const product = productMap.get(key)!;
-      if (event.type === "ENTRY") {
-        product.ordered += event.quantity;
-      } else {
-        product.wasted += event.quantity;
-      }
-    });
-
-    const summaries: ProductSummary[] = Array.from(productMap.entries()).map(([key, data]) => {
-      const [productName] = key.split("|");
-      const wastePercentage = data.ordered > 0 ? (data.wasted / data.ordered) * 100 : 0;
-      
-      // Generate suggestion
-      const base = data.ordered - data.wasted;
-      let suggestion = "";
-      
-      // Special case: everything was wasted (100% waste)
-      if (data.ordered > 0 && data.wasted >= data.ordered) {
-        suggestion = `Todo o stock foi desperdiçado (${data.ordered.toFixed(1)} ${data.unit}). Revisa o processo de armazenamento ou reduz drasticamente a encomenda.`;
-      } else if (wastePercentage > 30) {
-        // High waste - suggest reducing order
-        const suggested = Math.max(0, Math.round(base * 0.8));
-        suggestion = `Encomendaste ${data.ordered.toFixed(1)}, estragaste ${data.wasted.toFixed(1)} → talvez encomendar ~${suggested.toFixed(1)} ${data.unit}`;
-      } else if (wastePercentage > 15) {
-        // Medium waste - suggest slight reduction
-        const suggested = Math.max(0, Math.round(base * 0.9));
-        suggestion = `Encomendaste ${data.ordered.toFixed(1)}, estragaste ${data.wasted.toFixed(1)} → talvez encomendar ~${suggested.toFixed(1)} ${data.unit}`;
-      } else if (wastePercentage > 0) {
-        // Low waste - suggest maintaining similar
-        suggestion = `Parece bem manter ~${Math.round(base).toFixed(1)} ${data.unit}`;
-      } else {
-        // No waste - suggest maintaining
-        suggestion = `Parece bem manter ~${Math.round(data.ordered).toFixed(1)} ${data.unit}`;
-      }
-
-      return {
-        productName,
-        totalOrdered: data.ordered,
-        totalWasted: data.wasted,
-        wastePercentage,
-        unit: data.unit,
-        suggestion,
-      };
-    });
-
-    // Sort by waste percentage (highest first), then by name
-    summaries.sort((a, b) => {
-      if (Math.abs(a.wastePercentage - b.wastePercentage) > 0.1) {
-        return b.wastePercentage - a.wastePercentage;
-      }
-      return a.productName.localeCompare(b.productName);
-    });
-
-    return summaries;
+  // Calculate product summaries with normalized names
+  const { withEntryData, withoutEntryData } = useMemo(() => {
+    return aggregateEventsByProduct(events);
   }, [events]);
 
   return (
@@ -243,15 +163,34 @@ export function HistoryContent({ restaurantId }: HistoryContentProps) {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Desperdício</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                {summary.wastePercentage !== null && summary.wastePercentage > 15 ? (
+                  <TrendingUp className="h-4 w-4 text-destructive" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-green-600" />
+                )}
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {summary.wastePercentage.toFixed(1)}%
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Percentagem de desperdício
-                </p>
+                {summary.hasEnoughData && summary.wastePercentage !== null ? (
+                  <>
+                    <div className="text-2xl font-bold">
+                      {summary.wastePercentage.toFixed(1)}%
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Do total encomendado
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Ainda sem dados suficientes
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {summary.totalOrdered === 0
+                        ? "Sem entradas para calcular"
+                        : "Dados insuficientes para percentagem"}
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -262,58 +201,107 @@ export function HistoryContent({ restaurantId }: HistoryContentProps) {
               <CardTitle className="text-lg md:text-xl">Análise por Produto</CardTitle>
             </CardHeader>
             <CardContent>
-              {productSummaries.length === 0 ? (
+              {withEntryData.length === 0 && withoutEntryData.length === 0 ? (
                 <div className="py-12 text-center text-muted-foreground">
                   <p>Nenhum evento registado para este mês.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-2 px-2 font-medium">Produto</th>
-                        <th className="text-right py-2 px-2 font-medium">Encomendado</th>
-                        <th className="text-right py-2 px-2 font-medium">Estragado</th>
-                        <th className="text-right py-2 px-2 font-medium">% Desperdício</th>
-                        <th className="text-left py-2 px-2 font-medium">Sugestão</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {productSummaries.map((product) => (
-                        <tr key={product.productName} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-2 font-medium">{product.productName}</td>
-                          <td className="text-right py-3 px-2">
-                            {product.totalOrdered.toFixed(1)} {product.unit}
-                          </td>
-                          <td className="text-right py-3 px-2 text-destructive">
-                            {product.totalWasted.toFixed(1)} {product.unit}
-                          </td>
-                          <td className="text-right py-3 px-2">
-                            <span
-                              className={
-                                product.wastePercentage > 30
-                                  ? "text-destructive font-semibold"
-                                  : product.wastePercentage > 15
-                                  ? "text-orange-600 font-medium"
-                                  : "text-muted-foreground"
-                              }
-                            >
-                              {product.wastePercentage.toFixed(1)}%
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 text-sm text-muted-foreground hidden md:table-cell">
-                            {product.suggestion}
-                          </td>
-                          {/* Mobile: Show suggestion below on small screens */}
-                          <td className="md:hidden py-3 px-2">
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {product.suggestion}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-6">
+                  {/* Products with entry data */}
+                  {withEntryData.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-3">
+                        Produtos com histórico de encomenda
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-3 px-2 font-medium">Produto</th>
+                              <th className="text-right py-2 px-2 font-medium">Encomendado</th>
+                              <th className="text-right py-2 px-2 font-medium">Estragado</th>
+                              <th className="text-right py-2 px-2 font-medium">% Desperdício</th>
+                              <th className="text-left py-2 px-2 font-medium">Sugestão</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {withEntryData.map((product) => (
+                              <tr key={`${product.normalizedName}-${product.unit}`} className="border-b hover:bg-gray-50">
+                                <td className="py-3 px-2 font-medium">{product.productName}</td>
+                                <td className="text-right py-3 px-2">
+                                  {product.totalOrdered.toFixed(1)} {product.unit}
+                                </td>
+                                <td className="text-right py-3 px-2 text-destructive">
+                                  {product.totalWasted.toFixed(1)} {product.unit}
+                                </td>
+                                <td className="text-right py-3 px-2">
+                                  {product.wastePercentage !== null ? (
+                                    <span
+                                      className={
+                                        product.wastePercentage > 30
+                                          ? "text-destructive font-semibold"
+                                          : product.wastePercentage > 15
+                                          ? "text-orange-600 font-medium"
+                                          : "text-muted-foreground"
+                                      }
+                                    >
+                                      {product.wastePercentage.toFixed(1)}%
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-2 text-sm text-muted-foreground hidden md:table-cell">
+                                  {product.suggestion}
+                                </td>
+                                {/* Mobile: Show suggestion below on small screens */}
+                                <td className="md:hidden py-3 px-2">
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {product.suggestion}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Products without entry data (old stock) */}
+                  {withoutEntryData.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                        Produtos sem base de entrada neste mês
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-3 px-2 font-medium">Produto</th>
+                              <th className="text-right py-2 px-2 font-medium">Estragado</th>
+                              <th className="text-left py-2 px-2 font-medium">Nota</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {withoutEntryData.map((product) => (
+                              <tr key={`${product.normalizedName}-${product.unit}`} className="border-b hover:bg-gray-50">
+                                <td className="py-3 px-2 font-medium">{product.productName}</td>
+                                <td className="text-right py-3 px-2 text-destructive">
+                                  {product.totalWasted.toFixed(1)} {product.unit}
+                                </td>
+                                <td className="py-3 px-2 text-sm text-muted-foreground">
+                                  {product.suggestion}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
