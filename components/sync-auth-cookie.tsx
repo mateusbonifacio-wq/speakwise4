@@ -23,39 +23,39 @@ export function SyncAuthCookie() {
     
     lastPathnameRef.current = pathname;
 
-    // Only sync on authenticated routes
-    if (publicRoutes.includes(pathname)) {
-      // Clear cookie on public routes (only if it was set)
-      if (lastRestaurantIdRef.current !== null) {
-        console.log("[SyncAuthCookie] Clearing cookie on public route:", pathname);
-        document.cookie = "clearskok_restaurantId=; path=/; max-age=0";
-        lastRestaurantIdRef.current = null;
+      // Only sync on authenticated routes
+      if (publicRoutes.includes(pathname)) {
+        // Clear cookie on public routes (only if it was set)
+        if (lastRestaurantIdRef.current !== null) {
+          console.log("[SyncAuthCookie] Clearing cookie on public route:", pathname);
+          document.cookie = "clearstock_restaurantId=; path=/; max-age=0";
+          lastRestaurantIdRef.current = null;
+        }
+        return;
       }
-      return;
-    }
 
-    // Sync localStorage to cookie
-    if (isAuthenticated()) {
-      const restaurantId = getRestaurantId();
-      if (restaurantId) {
-        // Only update cookie if restaurantId changed
-        if (lastRestaurantIdRef.current !== restaurantId) {
-          console.log("[SyncAuthCookie] Syncing cookie for restaurantId:", restaurantId);
-          // Set cookie (expires in 7 days)
-          const expires = new Date();
-          expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000);
-          document.cookie = `clearskok_restaurantId=${restaurantId}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
-          lastRestaurantIdRef.current = restaurantId;
+      // Sync localStorage to cookie
+      if (isAuthenticated()) {
+        const restaurantId = getRestaurantId();
+        if (restaurantId) {
+          // Only update cookie if restaurantId changed
+          if (lastRestaurantIdRef.current !== restaurantId) {
+            console.log("[SyncAuthCookie] Syncing cookie for restaurantId:", restaurantId);
+            // Set cookie (expires in 7 days)
+            const expires = new Date();
+            expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000);
+            document.cookie = `clearstock_restaurantId=${restaurantId}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
+            lastRestaurantIdRef.current = restaurantId;
+          }
+        }
+      } else {
+        // Clear cookie if not authenticated (only if it was set)
+        if (lastRestaurantIdRef.current !== null) {
+          console.log("[SyncAuthCookie] Clearing cookie - not authenticated");
+          document.cookie = "clearstock_restaurantId=; path=/; max-age=0";
+          lastRestaurantIdRef.current = null;
         }
       }
-    } else {
-      // Clear cookie if not authenticated (only if it was set)
-      if (lastRestaurantIdRef.current !== null) {
-        console.log("[SyncAuthCookie] Clearing cookie - not authenticated");
-        document.cookie = "clearskok_restaurantId=; path=/; max-age=0";
-        lastRestaurantIdRef.current = null;
-      }
-    }
   }, [pathname]);
 
   return null;

@@ -185,7 +185,7 @@ export async function validatePinAndLogin(pin: string) {
 
     // Set cookie for server components
     const cookieStore = await cookies();
-    cookieStore.set("clearskok_restaurantId", tenantId, {
+    cookieStore.set("clearstock_restaurantId", tenantId, {
       path: "/",
       maxAge: 7 * 24 * 60 * 60, // 7 days
       sameSite: "lax",

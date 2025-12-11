@@ -13,7 +13,7 @@ export async function ConditionalNav() {
   // Get pathname from headers (we'll use a client component for this)
   // For now, we'll fetch restaurant data if authenticated
   const cookieStore = await cookies();
-  const restaurantId = cookieStore.get("clearskok_restaurantId")?.value;
+  const restaurantId = cookieStore.get("clearstock_restaurantId")?.value;
 
   // If not authenticated, don't show nav (client component will handle route checking)
   if (!restaurantId || !RESTAURANT_IDS.includes(restaurantId as RestaurantId)) {

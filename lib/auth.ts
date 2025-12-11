@@ -7,9 +7,9 @@ export const RESTAURANT_IDS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
 export type RestaurantId = typeof RESTAURANT_IDS[number];
 
 const STORAGE_KEYS = {
-  authenticated: "clearskok_authenticated",
-  restaurantId: "clearskok_restaurantId",
-  session: "clearskok_session",
+  authenticated: "clearstock_authenticated",
+  restaurantId: "clearstock_restaurantId",
+  session: "clearstock_session",
 } as const;
 
 /**

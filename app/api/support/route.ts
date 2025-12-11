@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify authentication
     const cookieStore = await cookies();
-    const restaurantIdCookie = cookieStore.get("clearskok_restaurantId")?.value;
+    const restaurantIdCookie = cookieStore.get("clearstock_restaurantId")?.value;
 
     if (!restaurantIdCookie || !RESTAURANT_IDS.includes(restaurantIdCookie as RestaurantId)) {
       return NextResponse.json(

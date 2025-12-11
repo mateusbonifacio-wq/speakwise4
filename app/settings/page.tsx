@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   // Check authentication via cookie
   const cookieStore = await cookies();
-  const restaurantId = cookieStore.get("clearskok_restaurantId")?.value;
+  const restaurantId = cookieStore.get("clearstock_restaurantId")?.value;
 
   if (!restaurantId || !RESTAURANT_IDS.includes(restaurantId as RestaurantId)) {
     redirect("/acesso");
