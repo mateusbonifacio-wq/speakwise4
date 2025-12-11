@@ -119,13 +119,18 @@ export function aggregateEventsByProduct(
   const withoutEntryData: ProductSummary[] = [];
   
   // Track products that appear in multiple units
+  // Only flag products that have actual data (entry or waste > 0) in multiple units
   const productsByNormalizedName = new Map<string, Set<string>>();
-  for (const [key] of productMap.entries()) {
+  for (const [key, data] of productMap.entries()) {
     const [normalizedName, unit] = key.split("|");
-    if (!productsByNormalizedName.has(normalizedName)) {
-      productsByNormalizedName.set(normalizedName, new Set());
+    // Only consider products that have actual activity (entry or waste > 0)
+    const hasActivity = data.entry > 0 || data.waste > 0;
+    if (hasActivity) {
+      if (!productsByNormalizedName.has(normalizedName)) {
+        productsByNormalizedName.set(normalizedName, new Set());
+      }
+      productsByNormalizedName.get(normalizedName)!.add(unit);
     }
-    productsByNormalizedName.get(normalizedName)!.add(unit);
   }
   const productsWithMultipleUnits = Array.from(productsByNormalizedName.entries())
     .filter(([_, units]) => units.size > 1)
