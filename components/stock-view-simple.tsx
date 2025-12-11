@@ -164,6 +164,8 @@ export function StockViewSimple({
   );
   const [isMarkingWaste, setIsMarkingWaste] = useState(false);
   const [adjustingBatchId, setAdjustingBatchId] = useState<string | null>(null);
+  // Optimistic updates: track local quantity changes before server confirms
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, number>>(new Map());
 
   // Update status filter and search query when props change (e.g., from navigation)
   // Usar useRef para evitar re-renders desnecessários
@@ -287,22 +289,54 @@ export function StockViewSimple({
     }
   };
 
-  // Handle quantity adjustment - refresh after success for accuracy
+  // Handle quantity adjustment with optimistic update for instant UI feedback
   const handleAdjustQuantity = async (batchId: string, adjustment: number) => {
+    // Find the batch to get current quantity
+    const batch = batches.find(b => b.id === batchId);
+    if (!batch) return;
+
+    const currentQuantity = batch.quantity;
+    const newQuantity = Math.max(0, currentQuantity + adjustment);
+    
+    // Optimistic update: update UI immediately
+    setOptimisticUpdates(prev => {
+      const next = new Map(prev);
+      next.set(batchId, newQuantity);
+      return next;
+    });
     setAdjustingBatchId(batchId);
+
+    // Make server call in background
     startTransition(async () => {
       try {
         const result = await adjustBatchQuantity(batchId, adjustment);
         if (result.success) {
-          toast.success(result.message || "Quantidade ajustada com sucesso!");
-          // Refresh to get updated data from server
+          // Success: clear optimistic update and refresh data
+          setOptimisticUpdates(prev => {
+            const next = new Map(prev);
+            next.delete(batchId);
+            return next;
+          });
+          // Use router.refresh() but it should be faster now since UI already updated
           router.refresh();
         } else {
+          // Error: revert optimistic update
+          setOptimisticUpdates(prev => {
+            const next = new Map(prev);
+            next.delete(batchId);
+            return next;
+          });
           toast.error("Erro ao ajustar quantidade", {
             description: result.error || "Ocorreu um erro ao ajustar a quantidade.",
           });
         }
       } catch (error) {
+        // Error: revert optimistic update
+        setOptimisticUpdates(prev => {
+          const next = new Map(prev);
+          next.delete(batchId);
+          return next;
+        });
         console.error("Error adjusting quantity:", error);
         toast.error("Erro inesperado", {
           description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
@@ -683,7 +717,11 @@ export function StockViewSimple({
                 {categoryBatches.map((batch) => {
                   const status = getBatchStatus(batch, restaurant);
 
-                  const isFinished = (batch.quantity ?? 0) <= 0;
+                  // Use optimistic quantity if available, otherwise use batch quantity
+                  const displayQuantity = optimisticUpdates.has(batch.id) 
+                    ? (optimisticUpdates.get(batch.id) ?? batch.quantity)
+                    : batch.quantity;
+                  const isFinished = (displayQuantity ?? 0) <= 0;
                   const isAdjusting = adjustingBatchId === batch.id;
 
                   return (
@@ -766,7 +804,9 @@ export function StockViewSimple({
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 flex-shrink-0" />
                           <span className="font-medium text-foreground">
-                            {batch.quantity} {batch.unit}
+                            {optimisticUpdates.has(batch.id) 
+                              ? optimisticUpdates.get(batch.id) 
+                              : batch.quantity} {batch.unit}
                           </span>
                           {/* Quantity adjustment buttons */}
                           {!isFinished && (
