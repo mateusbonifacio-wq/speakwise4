@@ -60,7 +60,7 @@ export function MainNav({ restaurantName }: MainNavProps) {
       <div className="container flex h-12 md:h-14 items-center px-4 md:px-6">
         {/* Desktop navigation - hidden on mobile */}
         <div className="mr-4 hidden md:flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
+          <Link href="/hoje" className="mr-6 flex items-center space-x-2">
             <span className="font-bold">
               Clearstock
             </span>
@@ -95,7 +95,7 @@ export function MainNav({ restaurantName }: MainNavProps) {
           </SheetTrigger>
           <SheetContent side="left" className="w-[280px] sm:w-[300px]">
             <Link
-              href="/"
+              href="/hoje"
               className="flex items-center py-4"
               onClick={() => setOpen(false)}
             >
@@ -130,7 +130,7 @@ export function MainNav({ restaurantName }: MainNavProps) {
         </Sheet>
 
         {/* Mobile: Show app name next to menu button */}
-        <Link href="/" className="md:hidden ml-2 font-bold text-base">
+        <Link href="/hoje" className="md:hidden ml-2 font-bold text-base">
           Clearstock
         </Link>
         
