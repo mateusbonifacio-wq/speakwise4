@@ -24,9 +24,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }, [authenticated, loading]);
 
   // Show nothing while checking auth status
+  // CRITICAL FIX: Use fixed height to prevent layout shift
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center" style={{ minHeight: '100vh' }}>
         <div className="text-muted-foreground">A carregar...</div>
       </div>
     );

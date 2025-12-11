@@ -153,10 +153,19 @@ export function StockViewWrapper({
   }
 
   if (!convertedData) {
+    // CRITICAL FIX: Use fixed height skeleton to prevent layout shift
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" style={{ minHeight: '400px' }}>
         <div className="rounded-lg border p-6 text-center">
-          <p className="text-sm text-muted-foreground">A carregar...</p>
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+            <div className="space-y-2 mt-6">
+              <div className="h-16 bg-gray-100 rounded"></div>
+              <div className="h-16 bg-gray-100 rounded"></div>
+              <div className="h-16 bg-gray-100 rounded"></div>
+            </div>
+          </div>
         </div>
       </div>
     );

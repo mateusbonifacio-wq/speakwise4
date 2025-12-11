@@ -57,6 +57,7 @@ export function MainNav({ restaurantName }: MainNavProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/95">
       {/* Mobile-first: h-12 on mobile for compact, h-14 on desktop */}
+      {/* CRITICAL FIX: Fixed height to prevent layout shift */}
       <div className="container flex h-12 md:h-14 items-center px-4 md:px-6">
         {/* Desktop navigation - hidden on mobile */}
         <div className="mr-4 hidden md:flex">

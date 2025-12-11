@@ -19,7 +19,8 @@ export function ConditionalNavClient({ restaurantName }: ConditionalNavClientPro
 
   // Don't show navbar on public routes
   if (publicRoutes.includes(pathname)) {
-    return null;
+    // CRITICAL FIX: Return empty div with fixed height to prevent layout shift
+    return <div style={{ height: 0, minHeight: 0 }} aria-hidden="true" />;
   }
 
   // Show navbar on all other routes (protected routes)
