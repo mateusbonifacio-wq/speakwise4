@@ -132,20 +132,23 @@ export function HistoryContent({ restaurantId }: HistoryContentProps) {
       const base = data.ordered - data.wasted;
       let suggestion = "";
       
-      if (wastePercentage > 30) {
+      // Special case: everything was wasted (100% waste)
+      if (data.ordered > 0 && data.wasted >= data.ordered) {
+        suggestion = `Todo o stock foi desperdiçado (${data.ordered.toFixed(1)} ${data.unit}). Revisa o processo de armazenamento ou reduz drasticamente a encomenda.`;
+      } else if (wastePercentage > 30) {
         // High waste - suggest reducing order
         const suggested = Math.max(0, Math.round(base * 0.8));
-        suggestion = `Encomendaste ${data.ordered.toFixed(1)}, estragaste ${data.wasted.toFixed(1)} → talvez encomendar ~${suggested.toFixed(1)}`;
+        suggestion = `Encomendaste ${data.ordered.toFixed(1)}, estragaste ${data.wasted.toFixed(1)} → talvez encomendar ~${suggested.toFixed(1)} ${data.unit}`;
       } else if (wastePercentage > 15) {
         // Medium waste - suggest slight reduction
         const suggested = Math.max(0, Math.round(base * 0.9));
-        suggestion = `Encomendaste ${data.ordered.toFixed(1)}, estragaste ${data.wasted.toFixed(1)} → talvez encomendar ~${suggested.toFixed(1)}`;
+        suggestion = `Encomendaste ${data.ordered.toFixed(1)}, estragaste ${data.wasted.toFixed(1)} → talvez encomendar ~${suggested.toFixed(1)} ${data.unit}`;
       } else if (wastePercentage > 0) {
         // Low waste - suggest maintaining similar
-        suggestion = `Parece bem manter ~${Math.round(base).toFixed(1)}`;
+        suggestion = `Parece bem manter ~${Math.round(base).toFixed(1)} ${data.unit}`;
       } else {
         // No waste - suggest maintaining
-        suggestion = `Parece bem manter ~${Math.round(data.ordered).toFixed(1)}`;
+        suggestion = `Parece bem manter ~${Math.round(data.ordered).toFixed(1)} ${data.unit}`;
       }
 
       return {

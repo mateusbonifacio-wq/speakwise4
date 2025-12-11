@@ -77,6 +77,9 @@ export function aggregateEventsByProduct(events: Array<{ type: "ENTRY" | "WASTE"
     let suggestion = "";
     if (totalEntry === 0) {
       suggestion = "Sem dados de encomenda";
+    } else if (totalEntry > 0 && totalWaste >= totalEntry) {
+      // Special case: everything was wasted (100% waste)
+      suggestion = `Todo o stock foi desperdiçado (${totalEntry.toFixed(1)} ${data.unit}). Revisa o processo de armazenamento ou reduz drasticamente a encomenda.`;
     } else if (wastePercentage > 30) {
       // High waste - suggest reducing order
       const suggested = Math.max(0, Math.round(totalEntry - totalWaste));
@@ -87,7 +90,8 @@ export function aggregateEventsByProduct(events: Array<{ type: "ENTRY" | "WASTE"
       suggestion = `Desperdício moderado (${wastePercentage.toFixed(1)}%). Considera encomendar ~${suggested} ${data.unit}`;
     } else {
       // Low waste - maintain similar order
-      suggestion = `Desperdício baixo (${wastePercentage.toFixed(1)}%). Parece bem manter ~${Math.round(totalEntry)} ${data.unit}`;
+      const base = totalEntry - totalWaste;
+      suggestion = `Desperdício baixo (${wastePercentage.toFixed(1)}%). Parece bem manter ~${Math.round(base)} ${data.unit}`;
     }
 
     result.push({
