@@ -631,6 +631,16 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
       throw new Error("ID do batch não fornecido");
     }
 
+    // Get current batch to check if name changed
+    const currentBatch = await db.productBatch.findUnique({
+      where: { id: batchId },
+      select: { name: true, unit: true },
+    });
+
+    if (!currentBatch) {
+      throw new Error("Batch não encontrado");
+    }
+
     const name = String(formData.get("name") ?? "").trim();
     const quantityRaw = formData.get("quantity");
     const unitRaw = String(formData.get("unit") ?? "").trim();
@@ -672,6 +682,11 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
     const size = sizeRawValue && !isNaN(Number(sizeRawValue)) && Number(sizeRawValue) > 0 ? Number(sizeRawValue) : null;
     const sizeUnit = size && sizeUnitRaw && String(sizeUnitRaw).trim() !== "" ? String(sizeUnitRaw).trim() : null;
 
+    // Check if name or unit changed
+    const nameChanged = currentBatch.name !== name;
+    const unitChanged = currentBatch.unit !== unit;
+
+    // Update the batch
     await db.productBatch.update({
       where: { id: batchId },
       data: {
@@ -688,7 +703,27 @@ export async function updateProductBatch(batchId: string, formData: FormData) {
       },
     });
 
+    // If name or unit changed, update all historical events linked to this batch
+    if (nameChanged || unitChanged) {
+      try {
+        const updatedEvents = await db.stockEvent.updateMany({
+          where: {
+            batchId: batchId,
+          },
+          data: {
+            productName: name,
+            unit: unit,
+          },
+        });
+        console.log(`[updateProductBatch] Updated ${updatedEvents.count} historical events for batch ${batchId} (name: ${currentBatch.name} -> ${name}, unit: ${currentBatch.unit} -> ${unit})`);
+      } catch (eventError) {
+        // Don't fail the whole operation if event update fails
+        console.error(`[updateProductBatch] Error updating historical events for batch ${batchId}:`, eventError);
+      }
+    }
+
     revalidatePath("/stock", "page");
+    revalidatePath("/historico", "page"); // Also revalidate history page
   } catch (error) {
     console.error("Error updating product batch:", error);
     throw error; // Re-throw para o client conseguir capturar
