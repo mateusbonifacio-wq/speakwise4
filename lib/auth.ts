@@ -77,6 +77,19 @@ const isRestaurantId = (value: string | null): value is RestaurantId => {
 };
 
 /**
+ * Check if a value is a valid restaurant identifier (either RestaurantId or restaurant ID)
+ * This allows new PINs to work without being in the static mapping
+ */
+export function isValidRestaurantIdentifier(value: string | null | undefined): boolean {
+  if (!value) return false;
+  // Check if it's a legacy RestaurantId (A, B, C, etc.)
+  if (RESTAURANT_IDS.includes(value as RestaurantId)) return true;
+  // Check if it's a restaurant ID (cuid format, longer than 10 chars)
+  if (value.length > 10) return true;
+  return false;
+}
+
+/**
  * Check if user is authenticated
  * Now also checks for valid session (7-day persistence)
  */

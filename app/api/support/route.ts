@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getRestaurantByTenantId } from "@/lib/data-access";
-import { RESTAURANT_IDS, type RestaurantId } from "@/lib/auth";
+import { isValidRestaurantIdentifier } from "@/lib/auth";
 import { sendSupportEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const restaurantIdCookie = cookieStore.get("clearstock_restaurantId")?.value;
 
-    if (!restaurantIdCookie || !RESTAURANT_IDS.includes(restaurantIdCookie as RestaurantId)) {
+    if (!restaurantIdCookie || !isValidRestaurantIdentifier(restaurantIdCookie)) {
       return NextResponse.json(
         { ok: false, error: "Não autenticado" },
         { status: 401 }
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify restaurant exists and matches authenticated user
-    const restaurant = await getRestaurantByTenantId(restaurantIdCookie as RestaurantId);
+    const restaurant = await getRestaurantByTenantId(restaurantIdCookie);
     
     if (restaurant.id !== restaurantId) {
       return NextResponse.json(

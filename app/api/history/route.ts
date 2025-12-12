@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getRestaurantByTenantId } from "@/lib/data-access";
-import { RESTAURANT_IDS, type RestaurantId } from "@/lib/auth";
+import { isValidRestaurantIdentifier } from "@/lib/auth";
 import { startOfMonth, endOfMonth } from "date-fns";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +12,11 @@ export async function GET(request: NextRequest) {
     const cookieStore = cookies();
     const restaurantIdCookie = cookieStore.get("clearstock_restaurantId")?.value;
 
-    if (!restaurantIdCookie || !RESTAURANT_IDS.includes(restaurantIdCookie as RestaurantId)) {
+    if (!restaurantIdCookie || !isValidRestaurantIdentifier(restaurantIdCookie)) {
       return NextResponse.json({ ok: false, error: "Não autenticado" }, { status: 401 });
     }
 
-    const restaurant = await getRestaurantByTenantId(restaurantIdCookie as RestaurantId);
+    const restaurant = await getRestaurantByTenantId(restaurantIdCookie);
     const { searchParams } = new URL(request.url);
     const monthParam = searchParams.get("month");
 

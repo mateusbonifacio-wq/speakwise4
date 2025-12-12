@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getRestaurantByTenantId } from "@/lib/data-access";
 import { AuthGuard } from "@/components/auth-guard";
-import { RESTAURANT_IDS, type RestaurantId } from "@/lib/auth";
+import { isValidRestaurantIdentifier } from "@/lib/auth";
 import SupportForm from "@/components/support-form";
 
 export const dynamic = "force-dynamic";
@@ -15,12 +15,12 @@ export default async function SuportePage() {
   const cookieStore = await cookies();
   const restaurantId = cookieStore.get("clearstock_restaurantId")?.value;
 
-  if (!restaurantId || !RESTAURANT_IDS.includes(restaurantId as RestaurantId)) {
+  if (!restaurantId || !isValidRestaurantIdentifier(restaurantId)) {
     redirect("/acesso");
   }
 
   try {
-    const restaurant = await getRestaurantByTenantId(restaurantId as RestaurantId);
+    const restaurant = await getRestaurantByTenantId(restaurantId);
 
     return (
       <AuthGuard>

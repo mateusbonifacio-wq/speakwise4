@@ -9,12 +9,12 @@ import { RESTAURANT_NAMES, RESTAURANT_IDS, PIN_TO_RESTAURANT, normalizePIN, type
 /**
  * Helper to get restaurantId from cookies in server actions
  */
-async function getRestaurantIdFromCookie(): Promise<RestaurantId | null> {
+async function getRestaurantIdFromCookie(): Promise<RestaurantId | string | null> {
   const cookieStore = await cookies();
   const restaurantId = cookieStore.get("clearstock_restaurantId")?.value;
   
-  if (restaurantId && RESTAURANT_IDS.includes(restaurantId as RestaurantId)) {
-    return restaurantId as RestaurantId;
+  if (restaurantId && isValidRestaurantIdentifier(restaurantId)) {
+    return restaurantId;
   }
   
   return null;
@@ -137,14 +137,11 @@ export async function validatePinAndLogin(pin: string) {
     }
 
     // Get the tenant ID from PIN mapping (for cookie compatibility)
-    const tenantId = PIN_TO_RESTAURANT[normalizedPin];
+    // If PIN is not in the mapping, use the restaurant ID as fallback
+    let tenantId: string = PIN_TO_RESTAURANT[normalizedPin] || restaurant.id;
     
-    if (!tenantId) {
-      return {
-        success: false,
-        error: "PIN não está associado a um restaurante válido.",
-      };
-    }
+    // For new PINs not in the mapping, use the restaurant ID directly
+    // This allows new PINs to work without being in the static mapping
 
     // Set cookie for server components
     const cookieStore = await cookies();

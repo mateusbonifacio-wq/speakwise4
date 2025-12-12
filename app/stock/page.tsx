@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getRestaurantByTenantId } from "@/lib/data-access";
-import { RESTAURANT_IDS, type RestaurantId } from "@/lib/auth";
+import { RESTAURANT_IDS, isValidRestaurantIdentifier, type RestaurantId } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { StockViewWrapper } from "@/components/stock-view-wrapper";
 import { AuthGuard } from "@/components/auth-guard";
@@ -21,12 +21,12 @@ export default async function StockPage() {
   const cookieStore = await cookies();
   const restaurantId = cookieStore.get("clearstock_restaurantId")?.value;
 
-  if (!restaurantId || !RESTAURANT_IDS.includes(restaurantId as RestaurantId)) {
+  if (!restaurantId || !isValidRestaurantIdentifier(restaurantId)) {
     redirect("/acesso");
   }
 
   try {
-    const restaurant = await getRestaurantByTenantId(restaurantId as RestaurantId);
+    const restaurant = await getRestaurantByTenantId(restaurantId);
 
     // Check for expired batches and register WASTE events
     const { checkAndRegisterExpiredBatches } = await import("@/app/actions");

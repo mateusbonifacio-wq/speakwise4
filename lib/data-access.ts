@@ -17,11 +17,26 @@ export async function getRestaurantByPin(pin: string) {
 }
 
 /**
- * Get or create restaurant by tenant ID (A, B, or C)
+ * Get or create restaurant by tenant ID (A, B, or C) or restaurant ID
  * This is used for backward compatibility with the cookie-based system
+ * Also supports direct restaurant IDs for new PINs not in the mapping
  */
-export async function getRestaurantByTenantId(tenantId: RestaurantId) {
-  // Find the PIN for this tenant ID
+export async function getRestaurantByTenantId(tenantId: RestaurantId | string) {
+  // If tenantId is a restaurant ID (cuid format, longer than 10 chars and not in RESTAURANT_IDS)
+  // This handles new PINs that use restaurant.id directly
+  if (tenantId.length > 10 && !RESTAURANT_IDS.includes(tenantId as RestaurantId)) {
+    const restaurant = await db.restaurant.findUnique({
+      where: { id: tenantId },
+      include: {
+        categories: true,
+        locations: true,
+      },
+    });
+    if (restaurant) return restaurant;
+    throw new Error(`Restaurant with ID ${tenantId} not found`);
+  }
+
+  // Find the PIN for this tenant ID (for legacy RestaurantId like "A", "B", etc.)
   const pin = Object.entries(PIN_TO_RESTAURANT).find(
     ([_, id]) => id === tenantId
   )?.[0];
