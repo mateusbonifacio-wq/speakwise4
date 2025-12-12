@@ -1,5 +1,4 @@
 import { db } from "@/lib/db";
-import { v4 as uuidv4 } from "uuid";
 
 /**
  * Script to create 40 new PINs and restaurants
