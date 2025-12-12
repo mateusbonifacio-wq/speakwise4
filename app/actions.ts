@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getRestaurantByTenantId, getUser, getRestaurantByPin } from "@/lib/data-access";
-import { RESTAURANT_NAMES, RESTAURANT_IDS, PIN_TO_RESTAURANT, normalizePIN, type RestaurantId } from "@/lib/auth";
+import { RESTAURANT_NAMES, RESTAURANT_IDS, PIN_TO_RESTAURANT, normalizePIN, type RestaurantId, isValidRestaurantIdentifier } from "@/lib/auth";
 
 /**
  * Helper to get restaurantId from cookies in server actions
