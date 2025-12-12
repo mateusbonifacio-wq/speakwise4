@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { RESTAURANT_NAMES, PIN_TO_RESTAURANT, type RestaurantId } from "@/lib/auth"
+import { RESTAURANT_NAMES, RESTAURANT_IDS, PIN_TO_RESTAURANT, type RestaurantId } from "@/lib/auth"
 
 /**
  * Get restaurant by PIN
