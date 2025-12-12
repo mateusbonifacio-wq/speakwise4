@@ -1,59 +1,74 @@
-import { PrismaClient } from "@prisma/client";
-import { PIN_TO_RESTAURANT, RESTAURANT_NAMES } from "../lib/auth";
+import { db } from "@/lib/db";
 
-const prisma = new PrismaClient();
+/**
+ * Script to list all PINs from the database
+ */
 
-async function listAllPins() {
-  console.log("\n=== LISTA COMPLETA DE PINs ===\n");
-  
-  // Get PINs from database
-  const restaurants = await prisma.restaurant.findMany({
-    select: { pin: true, name: true },
-    orderBy: { pin: "asc" },
-  });
+async function main() {
+  console.log("Fetching all PINs from database...\n");
 
-  console.log("📋 PINs no Banco de Dados:");
-  console.log("─".repeat(60));
-  restaurants.forEach((r, i) => {
-    const num = (i + 1).toString().padStart(2, "0");
-    const pin = r.pin.padEnd(6, " ");
-    const name = r.name || "(sem nome)";
-    console.log(`${num}. PIN: ${pin} | Restaurante: ${name}`);
-  });
-  console.log(`\nTotal no banco: ${restaurants.length} restaurantes\n`);
+  try {
+    const restaurants = await db.restaurant.findMany({
+      select: {
+        pin: true,
+        name: true,
+        id: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: "asc", // Oldest first
+      },
+    });
 
-  // Get PINs from code mapping
-  console.log("📋 PINs Definidos no Código (PIN_TO_RESTAURANT):");
-  console.log("─".repeat(60));
-  const codePins = Object.entries(PIN_TO_RESTAURANT).sort(([a], [b]) => a.localeCompare(b));
-  codePins.forEach(([pin, restaurantId], i) => {
-    const num = (i + 1).toString().padStart(2, "0");
-    const restaurantName = RESTAURANT_NAMES[restaurantId];
-    console.log(`${num}. PIN: ${pin} | ID: ${restaurantId} | ${restaurantName}`);
-  });
-  console.log(`\nTotal no código: ${codePins.length} PINs\n`);
+    console.log("=".repeat(80));
+    console.log(`Total PINs: ${restaurants.length}`);
+    console.log("=".repeat(80));
+    console.log("\nAll PINs:");
+    console.log("-".repeat(80));
+    
+    restaurants.forEach((restaurant, index) => {
+      const name = restaurant.name || "(sem nome)";
+      const date = restaurant.createdAt.toISOString().split("T")[0];
+      console.log(
+        `${(index + 1).toString().padStart(3, " ")}. PIN: ${restaurant.pin.padEnd(6, " ")} | Nome: ${name.padEnd(20, " ")} | Criado: ${date}`
+      );
+    });
 
-  // Summary table
-  console.log("📊 Resumo por Restaurante:");
-  console.log("─".repeat(60));
-  const sortedByRestaurant = codePins.map(([pin, id]) => ({
-    pin,
-    id,
-    name: RESTAURANT_NAMES[id],
-    inDb: restaurants.some((r) => r.pin === pin),
-  }));
+    console.log("-".repeat(80));
+    console.log(`\nTotal: ${restaurants.length} PINs\n`);
 
-  sortedByRestaurant.forEach((item, i) => {
-    const num = (i + 1).toString().padStart(2, "0");
-    const status = item.inDb ? "✅" : "❌";
-    console.log(`${num}. ${status} PIN: ${item.pin} | ${item.id} - ${item.name}`);
-  });
+    // Output just the PINs in a simple list
+    console.log("Lista simples de PINs:");
+    console.log("-".repeat(80));
+    restaurants.forEach((restaurant, index) => {
+      console.log(`${(index + 1).toString().padStart(3, " ")}. ${restaurant.pin}`);
+    });
 
-  await prisma.$disconnect();
+    // JSON format
+    console.log("\n\nJSON format (apenas PINs):");
+    console.log(JSON.stringify(restaurants.map(r => r.pin), null, 2));
+
+    // CSV format
+    console.log("\n\nCSV format:");
+    console.log("PIN,Nome,ID,Criado");
+    restaurants.forEach((restaurant) => {
+      const name = restaurant.name || "";
+      const date = restaurant.createdAt.toISOString().split("T")[0];
+      console.log(`${restaurant.pin},"${name}",${restaurant.id},${date}`);
+    });
+
+  } catch (error) {
+    console.error("Error fetching PINs:", error);
+    throw error;
+  }
 }
 
-listAllPins().catch((error) => {
-  console.error("Erro ao listar PINs:", error);
-  process.exit(1);
-});
-
+main()
+  .then(() => {
+    console.log("\n✅ Script completed successfully");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("\n❌ Script failed:", error);
+    process.exit(1);
+  });
