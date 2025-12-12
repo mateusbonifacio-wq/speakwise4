@@ -128,14 +128,15 @@ export function getRestaurantId(): RestaurantId | null {
  */
 export interface SessionData {
   pin: string;
-  restaurantId: RestaurantId;
+  restaurantId: RestaurantId | string; // Can be RestaurantId or restaurant.id for new PINs
   expiresAt: number; // timestamp
 }
 
 /**
  * Set authentication and restaurant ID with 7-day session
+ * Accepts both RestaurantId (legacy) and restaurant.id (new PINs)
  */
-export function setAuth(restaurantId: RestaurantId, pin: string): void {
+export function setAuth(restaurantId: RestaurantId | string, pin: string): void {
   if (typeof window === "undefined") return;
   
   localStorage.setItem(STORAGE_KEYS.authenticated, "true");

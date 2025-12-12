@@ -147,8 +147,9 @@ export default function AccessPage() {
     // Success - reset failed attempts
     setFailedAttempts(0);
 
-    // Get restaurant ID from PIN mapping for localStorage
-    const restaurantId = PIN_TO_RESTAURANT[normalizedPin] as RestaurantId | undefined;
+    // Get restaurant ID from PIN mapping for localStorage (for legacy PINs)
+    // For new PINs, use the restaurant ID from the server response
+    const restaurantId = PIN_TO_RESTAURANT[normalizedPin] as RestaurantId | undefined || result.restaurant?.id;
     
     if (!restaurantId) {
       setError("PIN não está associado a um restaurante válido.");
@@ -157,7 +158,8 @@ export default function AccessPage() {
     }
 
     // Set authentication in localStorage with session
-    setAuth(restaurantId, normalizedPin);
+    // For new PINs, restaurantId will be the restaurant.id (string), which is fine
+    setAuth(restaurantId as RestaurantId, normalizedPin);
 
     // Small delay for better UX
     await new Promise((resolve) => setTimeout(resolve, 200));
